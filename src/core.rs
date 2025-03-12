@@ -29,6 +29,7 @@
 //! ```
 use std::borrow::Borrow;
 use std::cell::RefCell;
+use std::time::TryFromFloatSecsError;
 
 use crate::types::*;
 
@@ -567,6 +568,30 @@ pub trait Parser<Input: Parsable<Error>, Output: ParserOutput, Error: Clone> {
                 .or_else(|(_, err)| recovery(err).parse(input))
         }
     }
+    /// Succeeds if the given parser fails, returning the original input.
+    ///
+    /// ## Example
+    ///
+    /// ```rust
+    /// use friss::*;
+    ///
+    /// let parser = "a".make_literal_matcher("Expected a").not("Not expected a");
+    ///
+    /// assert_eq!(parser.parse("b"), Ok(("b", ()))); // Success when "a" parser fails
+    /// assert_eq!(parser.parse("a"), Err(("a", "Not expected a"))); // Error when "a" parser succeeds
+    /// ```
+    fn not(self, err: Error) -> impl Parser<Input, (), Error>
+    where
+        Self: Sized,
+        Input: Clone,
+        Error: Clone,
+    {
+        move |input: Input| match self.parse(input.clone()) {
+            Ok(_) => Err((input, err.clone())),
+            Err(_) => Ok((input, ())),
+        }
+    }
+
     /// Looks ahead in the input stream without consuming it.
     ///
     /// ## Example
@@ -587,6 +612,74 @@ pub trait Parser<Input: Parsable<Error>, Output: ParserOutput, Error: Clone> {
         move |input: Input| {
             let (_, output) = self.parse(input.clone())?;
             Ok((input, output))
+        }
+    }
+
+    /// Similar to peek, but with more control over the behavior.
+    ///
+    /// - Allows examining the input without consuming it
+    /// - Can be combined with `not` for negative lookahead
+    ///
+    /// ## Example
+    ///
+    /// ```rust
+    /// use friss::*;
+    ///
+    /// // Check if the next characters are "abc" without consuming them
+    /// let parser = "abc".make_literal_matcher("Not abc").lookahead();
+    ///
+    /// assert_eq!(parser.parse("abcdef"), Ok(("abcdef", "abc"))); // Input is not consumed
+    /// ```
+    fn lookahead(self) -> impl Parser<Input, Output, Error>
+    where
+        Self: Sized,
+        Input: Clone,
+    {
+        move |input: Input| match self.parse(input.clone()) {
+            Ok((_, output)) => Ok((input, output)),
+            Err((_, err)) => Err((input, err)),
+        }
+    }
+
+    /// Parses content between two delimiters, returning only the content.
+    ///
+    /// ## Example
+    ///
+    /// ```rust
+    /// use friss::*;
+    ///
+    /// let open = "(".make_literal_matcher("Expected opening paren");
+    /// let close = ")".make_literal_matcher("Expected closing paren");
+    /// let content = "hello".make_literal_matcher("Expected content");
+    ///
+    /// let parser = content.surrounded_by(open, close);
+    ///
+    /// assert_eq!(parser.parse("(hello)"), Ok(("", "hello")));
+    /// assert_eq!(parser.parse("hello)"), Err(( "hello)", Either3::Left("Expected opening paren"))));
+    /// ```
+    fn surrounded_by<OutputLeft, OutputRight, ErrorLeft, ErrorRight>(
+        self,
+        left: impl Parser<Input, OutputLeft, ErrorLeft>,
+        right: impl Parser<Input, OutputRight, ErrorRight>,
+    ) -> impl Parser<Input, Output, Either3<ErrorLeft, Error, ErrorRight>>
+    where
+        Self: Sized,
+        Error: Clone,
+        ErrorLeft: Clone,
+        ErrorRight: Clone,
+        Input: Parsable<ErrorLeft>
+            + Parsable<ErrorRight>
+            + Parsable<Either3<ErrorLeft, Error, ErrorRight>>,
+    {
+        move |input: Input| match left.parse(input) {
+            Ok((rest1, _)) => match self.parse(rest1) {
+                Ok((rest2, output)) => match right.parse(rest2) {
+                    Ok((rest3, _)) => Ok((rest3, output)),
+                    Err((rest3, err)) => Err((rest3, Either3::Right(err))),
+                },
+                Err((rest2, err)) => Err((rest2, Either3::Middle(err))),
+            },
+            Err((rest1, err)) => Err((rest1, Either3::Left(err))),
         }
     }
 
@@ -637,6 +730,52 @@ pub trait Parser<Input: Parsable<Error>, Output: ParserOutput, Error: Clone> {
         }
     }
 
+    /// Similar to `sep_by` but requires at least one item.
+    ///
+    /// ## Example
+    ///
+    /// ```rust
+    /// use friss::*;
+    ///
+    /// let item = "item".make_literal_matcher("Expected item");
+    /// let comma = ",".make_literal_matcher("Expected comma");
+    /// let parser = item.sep_by1(comma, "At least one item required");
+    ///
+    /// assert_eq!(parser.parse("item,item,item"), Ok(("", vec!["item", "item", "item"])));
+    /// assert_eq!(parser.parse("item"), Ok(("", vec!["item"])));
+    /// assert_eq!(parser.parse(""), Err(("", "At least one item required")));
+    /// ```
+    fn sep_by1(
+        self,
+        sep: impl Parser<Input, Output, Error>,
+        err: Error,
+    ) -> impl Parser<Input, Vec<Output>, Error>
+    where
+        Self: Sized,
+        Input: Clone,
+        Error: Clone,
+    {
+        move |input: Input| match self.parse(input.clone()) {
+            Ok((rest, first)) => {
+                let mut results = vec![first];
+                let mut current_input = rest;
+
+                while let Ok((rest1, _)) = sep.parse(current_input.clone()) {
+                    match self.parse(rest1) {
+                        Ok((rest2, item)) => {
+                            results.push(item);
+                            current_input = rest2;
+                        }
+                        Err(_) => break,
+                    }
+                }
+
+                Ok((current_input, results))
+            }
+            Err(_) => Err((input, err.clone())),
+        }
+    }
+
     /// Chains parsers with left-associative operators.
     ///
     /// ## Example
@@ -676,6 +815,71 @@ pub trait Parser<Input: Parsable<Error>, Output: ParserOutput, Error: Clone> {
         }
     }
 
+    /// Similar to `chainl1` but produces right-associative operations.
+    ///
+    /// ## Example
+    ///
+    /// ```rust
+    /// use friss::*;
+    ///
+    /// let num = "1".make_literal_matcher("Not one").map(|_| 1);
+    /// let pow = "^".make_literal_matcher("No power")
+    ///     .map(|_| Box::new(|a: i32, b: i32| a.pow(b as u32)) as Box<dyn Fn(i32, i32) -> i32>);
+    ///
+    /// let parser = num.chainr1(pow);
+    /// assert_eq!(parser.parse("1^1^1"), Ok(("", 1))); // 1^(1^1) = 1^1 = 1
+    /// ```
+    fn chainr1(
+        self,
+        op: impl Parser<Input, Box<dyn Fn(Output, Output) -> Output>, Error>,
+    ) -> impl Parser<Input, Output, Error>
+    where
+        Self: Sized,
+        Input: Clone,
+        Output: Clone,
+    {
+        // Helper recursive function to handle the right-associative parsing
+        fn parse_right<I, O, E, P, OP>(
+            term_parser: &P,
+            op_parser: &OP,
+            input: I,
+        ) -> Result<(I, O), (I, E)>
+        where
+            P: Parser<I, O, E>,
+            OP: Parser<I, Box<dyn Fn(O, O) -> O>, E>,
+            I: Parsable<E> + Clone,
+            O: Clone,
+            E: Clone,
+        {
+            // Parse the leftmost term
+            let (rest, left_term) = term_parser.parse(input)?;
+
+            // Try to parse an operator
+            match op_parser.parse(rest.clone()) {
+                Ok((rest_after_op, op_func)) => {
+                    // Recursively parse the right side
+                    match parse_right(term_parser, op_parser, rest_after_op) {
+                        Ok((final_rest, right_term)) => {
+                            // Apply the operator with right associativity
+                            Ok((final_rest, op_func(left_term, right_term)))
+                        }
+                        Err(_) => {
+                            // If right side fails, just return the left term
+                            Ok((rest, left_term))
+                        }
+                    }
+                }
+                Err(_) => {
+                    // No operator found, just return the term
+                    Ok((rest, left_term))
+                }
+            }
+        }
+
+        // The actual parser implementation
+        move |input: Input| parse_right(&self, &op, input)
+    }
+
     /// Applies a function to the parser's output. Output is flattened .
     ///
     /// ## Example
@@ -704,6 +908,112 @@ pub trait Parser<Input: Parsable<Error>, Output: ParserOutput, Error: Clone> {
             let (rest, fun): (Input, T) = self.parse(input)?;
             let (rest, args) = arg_supplier.parse(rest)?;
             Ok((rest, fun.apply(args)))
+        }
+    }
+
+    /// Parses content that is preceded by a specific parser, returning only the content.
+    ///
+    /// ## Example
+    ///
+    /// ```rust
+    /// use friss::*;
+    ///
+    /// let prefix = "#".make_literal_matcher("Expected #");
+    /// let content = "tag".make_literal_matcher("Expected tag");
+    ///
+    /// let parser = content.preceded_by(prefix);
+    ///
+    /// assert_eq!(parser.parse("#tag"), Ok(("", "tag")));
+    /// assert_eq!(parser.parse("tag"), Err(("tag", Either::Left("Expected #"))));
+    /// ```
+    fn preceded_by<OutputLeft, ErrorLeft>(
+        self,
+        prefix: impl Parser<Input, OutputLeft, ErrorLeft>,
+    ) -> impl Parser<Input, Output, Either<ErrorLeft, Error>>
+    where
+        Self: Sized,
+        Error: Clone,
+        ErrorLeft: Clone,
+        Input: Parsable<ErrorLeft> + Parsable<Either<ErrorLeft, Error>>,
+    {
+        move |input: Input| match prefix.parse(input) {
+            Ok((rest, _)) => match self.parse(rest) {
+                Ok((final_rest, output)) => Ok((final_rest, output)),
+                Err((final_rest, err)) => Err((final_rest, Either::Right(err))),
+            },
+            Err((rest, err)) => Err((rest, Either::Left(err))),
+        }
+    }
+
+    /// Tries to parse the input and backtracks on failure.
+    ///
+    /// Unlike normal parsing which may consume input even on failure,
+    /// backtracking ensures the original input is returned on failure.
+    ///
+    /// ## Example
+    ///
+    /// ```rust
+    /// use friss::*;
+    ///
+    /// let parser = "abc".make_literal_matcher("Expected abc")
+    ///     .seq("def".make_literal_matcher("Expected def"))
+    ///     .backtrack();
+    ///
+    /// let parser2 = "abc".make_literal_matcher("Expected abc")
+    ///     .seq("def".make_literal_matcher("Expected def"));
+    ///
+    /// // Without backtrack, this would leave partial input consumed
+    /// assert_eq!(parser.parse("abcXYZ"), Err(("abcXYZ", Either::Right("Expected def"))));
+    /// assert_eq!(parser2.parse("abcXYZ"), Err(("XYZ", Either::Right("Expected def"))));
+    /// ```
+    fn backtrack(self) -> impl Parser<Input, Output, Error>
+    where
+        Self: Sized,
+        Input: Clone,
+    {
+        move |input: Input| match self.parse(input.clone()) {
+            Ok(result) => Ok(result),
+            Err((_, err)) => Err((input, err)),
+        }
+    }
+
+    /// Tries both parsers and returns the results of both that succeeded.
+    ///
+    /// ## Example
+    ///
+    /// ```rust
+    /// use friss::*;
+    ///
+    /// let a = "a".make_literal_matcher("Not a");
+    /// let b = "b".make_literal_matcher("Not b");
+    ///
+    /// let parser = a.or(b);
+    ///
+    /// assert_eq!(parser.parse("ab"), Ok(("ab", (Some(("b","a")), None))));
+    /// assert_eq!(parser.parse("ba"), Ok(("ba", (None, Some(("a","b"))))));
+    /// assert_eq!(parser.parse("c"), Err(("c", ("Not a", "Not b"))));
+    /// ```
+    fn or<Output2, Error2>(
+        self,
+        other: impl Parser<Input, Output2, Error2>,
+    ) -> impl Parser<Input, (Option<(Input, Output)>, Option<(Input, Output2)>), (Error, Error2)>
+    where
+        Self: Sized,
+        Input: Clone + Parsable<Error2> + Parsable<(Error, Error2)>,
+        Error: Clone,
+        Error2: Clone,
+    {
+        move |input: Input| {
+            let first = self.parse(input.clone());
+            let second = other.parse(input.clone());
+
+            let ret = match (first, second) {
+                (Ok(a), Ok(b)) => Ok((input, (Some(a), Some(b)))),
+                (Ok(a), Err(_)) => Ok((input, (Some(a), None))),
+                (Err(_), Ok(b)) => Ok((input, (None, Some(b)))),
+                (Err((_, a)), Err((_, b))) => Err((input, (a, b))),
+            };
+            ret
         }
     }
 
