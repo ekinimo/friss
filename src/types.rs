@@ -34,7 +34,7 @@ impl<A, B> Either<A, B> {
             Either::Left(a) => Either::Left(f(a)),
         }
     }
-    
+
     /// Maps only the right variant, leaving the left variant unchanged.
     pub fn map_right<C, F>(self, mut f: F) -> Either<A, C>
     where
@@ -45,7 +45,7 @@ impl<A, B> Either<A, B> {
             Either::Left(x) => Either::Left(x),
         }
     }
-    
+
     /// Maps only the left variant, leaving the right variant unchanged.
     pub fn map_left<C, F>(self, mut f: F) -> Either<C, B>
     where
@@ -222,7 +222,7 @@ pub type Three = Succ<Two>;
 pub trait NFoldable<T> {
     /// The result type of the fold operation.
     type Result;
-    
+
     /// Folds the nested Either structure into a single value.
     fn n_fold(self) -> Self::Result;
 }
@@ -285,7 +285,7 @@ impl<
 pub trait Foldable {
     /// The result type of the fold operation.
     type Result;
-    
+
     /// Folds the value into a single result.
     fn fold(self) -> Self::Result;
 }
@@ -322,7 +322,8 @@ impl<T1, T2, T3, T4, T5, T6, T7, T8> ProdType for (T1, T2, T3, T4, T5, T6, T7, T
 impl<T1, T2, T3, T4, T5, T6, T7, T8, T9> ProdType for (T1, T2, T3, T4, T5, T6, T7, T8, T9) {}
 impl<T1, T2, T3, T4, T5, T6, T7, T8, T9, T10> ProdType
     for (T1, T2, T3, T4, T5, T6, T7, T8, T9, T10)
-{}
+{
+}
 
 // Implementations for tuple SumAndProdType
 impl SumAndProdType for () {}
@@ -337,7 +338,8 @@ impl<T1, T2, T3, T4, T5, T6, T7, T8> SumAndProdType for (T1, T2, T3, T4, T5, T6,
 impl<T1, T2, T3, T4, T5, T6, T7, T8, T9> SumAndProdType for (T1, T2, T3, T4, T5, T6, T7, T8, T9) {}
 impl<T1, T2, T3, T4, T5, T6, T7, T8, T9, T10> SumAndProdType
     for (T1, T2, T3, T4, T5, T6, T7, T8, T9, T10)
-{}
+{
+}
 
 // Implementations for Empty SumType
 impl SumType for () {}
@@ -354,7 +356,8 @@ impl<T1, T2, T3, T4, T5, T6, T7, T8> SumType for Either8<T1, T2, T3, T4, T5, T6,
 impl<T1, T2, T3, T4, T5, T6, T7, T8, T9> SumType for Either9<T1, T2, T3, T4, T5, T6, T7, T8, T9> {}
 impl<T1, T2, T3, T4, T5, T6, T7, T8, T9, T10> SumType
     for Either10<T1, T2, T3, T4, T5, T6, T7, T8, T9, T10>
-{}
+{
+}
 
 // Implementations for Either SumAndProdType
 impl<T1, T2> SumAndProdType for Either<T1, T2> {}
@@ -366,8 +369,9 @@ impl<T1, T2, T3, T4, T5, T6, T7> SumAndProdType for Either7<T1, T2, T3, T4, T5, 
 impl<T1, T2, T3, T4, T5, T6, T7, T8> SumAndProdType for Either8<T1, T2, T3, T4, T5, T6, T7, T8> {}
 impl<T1, T2, T3, T4, T5, T6, T7, T8, T9> SumAndProdType
     for Either9<T1, T2, T3, T4, T5, T6, T7, T8, T9>
-{}
+{
+}
 impl<T1, T2, T3, T4, T5, T6, T7, T8, T9, T10> SumAndProdType
     for Either10<T1, T2, T3, T4, T5, T6, T7, T8, T9, T10>
-{}
-    
+{
+}

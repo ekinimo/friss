@@ -12,7 +12,7 @@ use crate::types::*;
 /// composition of multiple parsers in sequence or as alternatives.
 pub trait ParserSugar<
     In: Parsable<AltError> + Parsable<SeqError>,
-    SeqOut: ProdType,
+    SeqOut: ProdType + ToOrOutput<In>,
     SeqError: SumType + Clone,
     AltOut: SumType,
     AltError: ProdType + Clone,
@@ -23,6 +23,109 @@ pub trait ParserSugar<
 
     /// Creates a parser that tries each parser in this tuple, returning the first success.
     fn alt(self) -> impl Parser<In, AltOut, AltError>;
+
+    /// Creates a parser that tries each parser in this tuple, returning all of them.
+    fn or(self) -> impl Parser<In, <SeqOut as ToOrOutput<In>>::OrOutput, AltError>
+    where
+        In: Clone;
+}
+
+/// Type family for converting from sequence output to or output
+pub trait ToOrOutput<In> {
+    /// The corresponding OrOutput type
+    type OrOutput;
+}
+
+impl<T1, T2, In> ToOrOutput<In> for (T1, T2) {
+    type OrOutput = (Option<(In, T1)>, Option<(In, T2)>);
+}
+
+impl<T1, T2, T3, In> ToOrOutput<In> for (T1, T2, T3) {
+    type OrOutput = (Option<(In, T1)>, Option<(In, T2)>, Option<(In, T3)>);
+}
+
+impl<T1, T2, T3, T4, In> ToOrOutput<In> for (T1, T2, T3, T4) {
+    type OrOutput = (
+        Option<(In, T1)>,
+        Option<(In, T2)>,
+        Option<(In, T3)>,
+        Option<(In, T4)>,
+    );
+}
+
+impl<T1, T2, T3, T4, T5, In> ToOrOutput<In> for (T1, T2, T3, T4, T5) {
+    type OrOutput = (
+        Option<(In, T1)>,
+        Option<(In, T2)>,
+        Option<(In, T3)>,
+        Option<(In, T4)>,
+        Option<(In, T5)>,
+    );
+}
+
+impl<T1, T2, T3, T4, T5, T6, In> ToOrOutput<In> for (T1, T2, T3, T4, T5, T6) {
+    type OrOutput = (
+        Option<(In, T1)>,
+        Option<(In, T2)>,
+        Option<(In, T3)>,
+        Option<(In, T4)>,
+        Option<(In, T5)>,
+        Option<(In, T6)>,
+    );
+}
+impl<T1, T2, T3, T4, T5, T6, T7, In> ToOrOutput<In> for (T1, T2, T3, T4, T5, T6, T7) {
+    type OrOutput = (
+        Option<(In, T1)>,
+        Option<(In, T2)>,
+        Option<(In, T3)>,
+        Option<(In, T4)>,
+        Option<(In, T5)>,
+        Option<(In, T6)>,
+        Option<(In, T7)>,
+    );
+}
+impl<T1, T2, T3, T4, T5, T6, T7, T8, In> ToOrOutput<In> for (T1, T2, T3, T4, T5, T6, T7, T8) {
+    type OrOutput = (
+        Option<(In, T1)>,
+        Option<(In, T2)>,
+        Option<(In, T3)>,
+        Option<(In, T4)>,
+        Option<(In, T5)>,
+        Option<(In, T6)>,
+        Option<(In, T7)>,
+        Option<(In, T8)>,
+    );
+}
+impl<T1, T2, T3, T4, T5, T6, T7, T8, T9, In> ToOrOutput<In>
+    for (T1, T2, T3, T4, T5, T6, T7, T8, T9)
+{
+    type OrOutput = (
+        Option<(In, T1)>,
+        Option<(In, T2)>,
+        Option<(In, T3)>,
+        Option<(In, T4)>,
+        Option<(In, T5)>,
+        Option<(In, T6)>,
+        Option<(In, T7)>,
+        Option<(In, T8)>,
+        Option<(In, T9)>,
+    );
+}
+impl<T1, T2, T3, T4, T5, T6, T7, T8, T9, T10, In> ToOrOutput<In>
+    for (T1, T2, T3, T4, T5, T6, T7, T8, T9, T10)
+{
+    type OrOutput = (
+        Option<(In, T1)>,
+        Option<(In, T2)>,
+        Option<(In, T3)>,
+        Option<(In, T4)>,
+        Option<(In, T5)>,
+        Option<(In, T6)>,
+        Option<(In, T7)>,
+        Option<(In, T8)>,
+        Option<(In, T9)>,
+        Option<(In, T10)>,
+    );
 }
 
 // Implementations for specific tuples
@@ -47,6 +150,14 @@ where
     fn alt(self) -> impl Parser<In, Either<Out1, Out2>, (Error1, Error2)> {
         let (a0, a1) = self;
         a0.alt(a1)
+    }
+
+    fn or(self) -> impl Parser<In, (Option<(In, Out1)>, Option<(In, Out2)>), (Error1, Error2)>
+    where
+        In: Clone,
+    {
+        let (a0, a1) = self;
+        a0.or(a1)
     }
 }
 
@@ -100,6 +211,26 @@ where
                     Either::Right(x) => Either3::Middle(x),
                 },
                 Either::Right(x) => Either3::Right(x),
+            })
+    }
+
+    fn or(
+        self,
+    ) -> impl Parser<
+        In,
+        (Option<(In, Out1)>, Option<(In, Out2)>, Option<(In, Out3)>),
+        (Error1, Error2, Error3),
+    >
+    where
+        In: Clone,
+    {
+        let (a0, a1, a2) = self;
+        a0.or(a1)
+            .or(a2)
+            .map_err(|((a, b), y)| (a, b, y))
+            .map(|(a, c)| match a {
+                Some((_, (a, b))) => (a, b, c),
+                None => (None, None, c),
             })
     }
 }
@@ -172,6 +303,37 @@ where
                 },
                 Either::Right(x) => Either4::_4(x),
             })
+    }
+
+    fn or(
+        self,
+    ) -> impl Parser<
+        In,
+        (
+            Option<(In, Out1)>,
+            Option<(In, Out2)>,
+            Option<(In, Out3)>,
+            Option<(In, Out4)>,
+        ),
+        (Error1, Error2, Error3, Error4),
+    >
+    where
+        In: Clone,
+    {
+        let (a0, a1, a2, a3) = self;
+        a0.or(a1)
+            .or(a2)
+            .map(|(a, c)| match a {
+                Some((_, (a, b))) => (a, b, c),
+                None => (None, None, c),
+            })
+            .map_err(|((a, b), y)| (a, b, y))
+            .or(a3)
+            .map(|(a, d)| match a {
+                Some((_, (a, b, c))) => (a, b, c, d),
+                None => (None, None, None, d),
+            })
+            .map_err(|((a1, a2, a3), a4)| (a1, a2, a3, a4))
     }
 }
 
@@ -271,6 +433,44 @@ where
                 },
                 Either::Right(x) => Either5::_5(x),
             })
+    }
+
+    fn or(
+        self,
+    ) -> impl Parser<
+        In,
+        (
+            Option<(In, Out1)>,
+            Option<(In, Out2)>,
+            Option<(In, Out3)>,
+            Option<(In, Out4)>,
+            Option<(In, Out5)>,
+        ),
+        (Error1, Error2, Error3, Error4, Error5),
+    >
+    where
+        In: Clone,
+    {
+        let (a0, a1, a2, a3, a4) = self;
+        a0.or(a1)
+            .or(a2)
+            .map(|(a, c)| match a {
+                Some((_, (a, b))) => (a, b, c),
+                None => (None, None, c),
+            })
+            .map_err(|((a, b), y)| (a, b, y))
+            .or(a3)
+            .map(|(a, d)| match a {
+                Some((_, (a, b, c))) => (a, b, c, d),
+                None => (None, None, None, d),
+            })
+            .map_err(|((a1, a2, a3), a4)| (a1, a2, a3, a4))
+            .or(a4)
+            .map(|(a, e)| match a {
+                Some((_, (a, b, c, d))) => (a, b, c, d, e),
+                None => (None, None, None, None, e),
+            })
+            .map_err(|((a1, a2, a3, a4), a5)| (a1, a2, a3, a4, a5))
     }
 }
 
@@ -388,6 +588,51 @@ where
                 },
                 Either::Right(x) => Either6::_6(x),
             })
+    }
+
+    fn or(
+        self,
+    ) -> impl Parser<
+        In,
+        (
+            Option<(In, Out1)>,
+            Option<(In, Out2)>,
+            Option<(In, Out3)>,
+            Option<(In, Out4)>,
+            Option<(In, Out5)>,
+            Option<(In, Out6)>,
+        ),
+        (Error1, Error2, Error3, Error4, Error5, Error6),
+    >
+    where
+        In: Clone,
+    {
+        let (a0, a1, a2, a3, a4, a5) = self;
+        a0.or(a1)
+            .or(a2)
+            .map(|(a, c)| match a {
+                Some((_, (a, b))) => (a, b, c),
+                None => (None, None, c),
+            })
+            .map_err(|((a, b), y)| (a, b, y))
+            .or(a3)
+            .map(|(a, d)| match a {
+                Some((_, (a, b, c))) => (a, b, c, d),
+                None => (None, None, None, d),
+            })
+            .map_err(|((a1, a2, a3), a4)| (a1, a2, a3, a4))
+            .or(a4)
+            .map(|(a, e)| match a {
+                Some((_, (a, b, c, d))) => (a, b, c, d, e),
+                None => (None, None, None, None, e),
+            })
+            .map_err(|((a1, a2, a3, a4), a5)| (a1, a2, a3, a4, a5))
+            .or(a5)
+            .map(|(a, f)| match a {
+                Some((_, (a, b, c, d, e))) => (a, b, c, d, e, f),
+                None => (None, None, None, None, None, f),
+            })
+            .map_err(|((a1, a2, a3, a4, a5), a6)| (a1, a2, a3, a4, a5, a6))
     }
 }
 
@@ -517,6 +762,57 @@ where
                 },
                 Either::Right(x) => Either7::_7(x),
             })
+    }
+    fn or(
+        self,
+    ) -> impl Parser<
+        In,
+        (
+            Option<(In, Out1)>,
+            Option<(In, Out2)>,
+            Option<(In, Out3)>,
+            Option<(In, Out4)>,
+            Option<(In, Out5)>,
+            Option<(In, Out6)>,
+            Option<(In, Out7)>,
+        ),
+        (Error1, Error2, Error3, Error4, Error5, Error6, Error7),
+    >
+    where
+        In: Clone,
+    {
+        let (a0, a1, a2, a3, a4, a5, a6) = self;
+        a0.or(a1)
+            .or(a2)
+            .map(|(a, c)| match a {
+                Some((_, (a, b))) => (a, b, c),
+                None => (None, None, c),
+            })
+            .map_err(|((a, b), y)| (a, b, y))
+            .or(a3)
+            .map(|(a, d)| match a {
+                Some((_, (a, b, c))) => (a, b, c, d),
+                None => (None, None, None, d),
+            })
+            .map_err(|((a1, a2, a3), a4)| (a1, a2, a3, a4))
+            .or(a4)
+            .map(|(a, e)| match a {
+                Some((_, (a, b, c, d))) => (a, b, c, d, e),
+                None => (None, None, None, None, e),
+            })
+            .map_err(|((a1, a2, a3, a4), a5)| (a1, a2, a3, a4, a5))
+            .or(a5)
+            .map(|(a, f)| match a {
+                Some((_, (a, b, c, d, e))) => (a, b, c, d, e, f),
+                None => (None, None, None, None, None, f),
+            })
+            .map_err(|((a1, a2, a3, a4, a5), a6)| (a1, a2, a3, a4, a5, a6))
+            .or(a6)
+            .map(|(a, g)| match a {
+                Some((_, (a, b, c, d, e, f))) => (a, b, c, d, e, f, g),
+                None => (None, None, None, None, None, None, g),
+            })
+            .map_err(|((a1, a2, a3, a4, a5, a6), a7)| (a1, a2, a3, a4, a5, a6, a7))
     }
 }
 
@@ -686,6 +982,74 @@ where
                 },
                 Either::Right(x) => Either8::_8(x),
             })
+    }
+
+    fn or(
+        self,
+    ) -> impl Parser<
+        In,
+        (
+            Option<(In, Out1)>,
+            Option<(In, Out2)>,
+            Option<(In, Out3)>,
+            Option<(In, Out4)>,
+            Option<(In, Out5)>,
+            Option<(In, Out6)>,
+            Option<(In, Out7)>,
+            Option<(In, Out8)>,
+        ),
+        (
+            Error1,
+            Error2,
+            Error3,
+            Error4,
+            Error5,
+            Error6,
+            Error7,
+            Error8,
+        ),
+    >
+    where
+        In: Clone,
+    {
+        let (a0, a1, a2, a3, a4, a5, a6, a7) = self;
+        a0.or(a1)
+            .or(a2)
+            .map(|(a, c)| match a {
+                Some((_, (a, b))) => (a, b, c),
+                None => (None, None, c),
+            })
+            .map_err(|((a, b), y)| (a, b, y))
+            .or(a3)
+            .map(|(a, d)| match a {
+                Some((_, (a, b, c))) => (a, b, c, d),
+                None => (None, None, None, d),
+            })
+            .map_err(|((a1, a2, a3), a4)| (a1, a2, a3, a4))
+            .or(a4)
+            .map(|(a, e)| match a {
+                Some((_, (a, b, c, d))) => (a, b, c, d, e),
+                None => (None, None, None, None, e),
+            })
+            .map_err(|((a1, a2, a3, a4), a5)| (a1, a2, a3, a4, a5))
+            .or(a5)
+            .map(|(a, f)| match a {
+                Some((_, (a, b, c, d, e))) => (a, b, c, d, e, f),
+                None => (None, None, None, None, None, f),
+            })
+            .map_err(|((a1, a2, a3, a4, a5), a6)| (a1, a2, a3, a4, a5, a6))
+            .or(a6)
+            .map(|(a, g)| match a {
+                Some((_, (a, b, c, d, e, f))) => (a, b, c, d, e, f, g),
+                None => (None, None, None, None, None, None, g),
+            })
+            .map_err(|((a1, a2, a3, a4, a5, a6), a7)| (a1, a2, a3, a4, a5, a6, a7))
+            .or(a7)
+            .map(|(a, h)| match a {
+                Some((_, (a, b, c, d, e, f, g))) => (a, b, c, d, e, f, g, h),
+                None => (None, None, None, None, None, None, None, h),
+            })
+            .map_err(|((a1, a2, a3, a4, a5, a6, a7), a8)| (a1, a2, a3, a4, a5, a6, a7, a8))
     }
 }
 
@@ -891,6 +1255,82 @@ where
                 },
                 Either::Right(x) => Either9::_9(x),
             })
+    }
+
+    fn or(
+        self,
+    ) -> impl Parser<
+        In,
+        (
+            Option<(In, Out1)>,
+            Option<(In, Out2)>,
+            Option<(In, Out3)>,
+            Option<(In, Out4)>,
+            Option<(In, Out5)>,
+            Option<(In, Out6)>,
+            Option<(In, Out7)>,
+            Option<(In, Out8)>,
+            Option<(In, Out9)>,
+        ),
+        (
+            Error1,
+            Error2,
+            Error3,
+            Error4,
+            Error5,
+            Error6,
+            Error7,
+            Error8,
+            Error9,
+        ),
+    >
+    where
+        In: Clone,
+    {
+        let (a0, a1, a2, a3, a4, a5, a6, a7, a8) = self;
+        a0.or(a1)
+            .or(a2)
+            .map(|(a, c)| match a {
+                Some((_, (a, b))) => (a, b, c),
+                None => (None, None, c),
+            })
+            .map_err(|((a, b), y)| (a, b, y))
+            .or(a3)
+            .map(|(a, d)| match a {
+                Some((_, (a, b, c))) => (a, b, c, d),
+                None => (None, None, None, d),
+            })
+            .map_err(|((a1, a2, a3), a4)| (a1, a2, a3, a4))
+            .or(a4)
+            .map(|(a, e)| match a {
+                Some((_, (a, b, c, d))) => (a, b, c, d, e),
+                None => (None, None, None, None, e),
+            })
+            .map_err(|((a1, a2, a3, a4), a5)| (a1, a2, a3, a4, a5))
+            .or(a5)
+            .map(|(a, f)| match a {
+                Some((_, (a, b, c, d, e))) => (a, b, c, d, e, f),
+                None => (None, None, None, None, None, f),
+            })
+            .map_err(|((a1, a2, a3, a4, a5), a6)| (a1, a2, a3, a4, a5, a6))
+            .or(a6)
+            .map(|(a, g)| match a {
+                Some((_, (a, b, c, d, e, f))) => (a, b, c, d, e, f, g),
+                None => (None, None, None, None, None, None, g),
+            })
+            .map_err(|((a1, a2, a3, a4, a5, a6), a7)| (a1, a2, a3, a4, a5, a6, a7))
+            .or(a7)
+            .map(|(a, h)| match a {
+                Some((_, (a, b, c, d, e, f, g))) => (a, b, c, d, e, f, g, h),
+                None => (None, None, None, None, None, None, None, h),
+            })
+            .map_err(|((a1, a2, a3, a4, a5, a6, a7), a8)| (a1, a2, a3, a4, a5, a6, a7, a8))
+            .or(a8)
+            .map(|(a, j)| match a {
+                Some((_, (a, b, c, d, e, f, g, h))) => (a, b, c, d, e, f, g, h, j),
+                None => (None, None, None, None, None, None, None, None, j),
+            })
+            .map_err(|((a1, a2, a3, a4, a5, a6, a7, a8), a9)| (a1, a2, a3, a4, a5, a6, a7, a8, a9))
     }
 }
 
@@ -1152,5 +1592,94 @@ where
                 },
                 Either::Right(x) => Either10::_10(x),
             })
+    }
+
+    fn or(
+        self,
+    ) -> impl Parser<
+        In,
+        (
+            Option<(In, Out1)>,
+            Option<(In, Out2)>,
+            Option<(In, Out3)>,
+            Option<(In, Out4)>,
+            Option<(In, Out5)>,
+            Option<(In, Out6)>,
+            Option<(In, Out7)>,
+            Option<(In, Out8)>,
+            Option<(In, Out9)>,
+            Option<(In, Out10)>,
+        ),
+        (
+            Error1,
+            Error2,
+            Error3,
+            Error4,
+            Error5,
+            Error6,
+            Error7,
+            Error8,
+            Error9,
+            Error10,
+        ),
+    >
+    where
+        In: Clone,
+    {
+        let (a0, a1, a2, a3, a4, a5, a6, a7, a8, a9) = self;
+        let ret = a0
+            .or(a1)
+            .or(a2)
+            .map(|(a, c)| match a {
+                Some((_, (a, b))) => (a, b, c),
+                None => (None, None, c),
+            })
+            .map_err(|((a, b), y)| (a, b, y))
+            .or(a3)
+            .map(|(a, d)| match a {
+                Some((_, (a, b, c))) => (a, b, c, d),
+                None => (None, None, None, d),
+            })
+            .map_err(|((a1, a2, a3), a4)| (a1, a2, a3, a4))
+            .or(a4)
+            .map(|(a, e)| match a {
+                Some((_, (a, b, c, d))) => (a, b, c, d, e),
+                None => (None, None, None, None, e),
+            })
+            .map_err(|((a1, a2, a3, a4), a5)| (a1, a2, a3, a4, a5))
+            .or(a5)
+            .map(|(a, f)| match a {
+                Some((_, (a, b, c, d, e))) => (a, b, c, d, e, f),
+                None => (None, None, None, None, None, f),
+            })
+            .map_err(|((a1, a2, a3, a4, a5), a6)| (a1, a2, a3, a4, a5, a6))
+            .or(a6)
+            .map(|(a, g)| match a {
+                Some((_, (a, b, c, d, e, f))) => (a, b, c, d, e, f, g),
+                None => (None, None, None, None, None, None, g),
+            })
+            .map_err(|((a1, a2, a3, a4, a5, a6), a7)| (a1, a2, a3, a4, a5, a6, a7))
+            .or(a7)
+            .map(|(a, h)| match a {
+                Some((_, (a, b, c, d, e, f, g))) => (a, b, c, d, e, f, g, h),
+                None => (None, None, None, None, None, None, None, h),
+            })
+            .map_err(|((a1, a2, a3, a4, a5, a6, a7), a8)| (a1, a2, a3, a4, a5, a6, a7, a8))
+            .or(a8)
+            .map(|(a, j)| match a {
+                Some((_, (a, b, c, d, e, f, g, h))) => (a, b, c, d, e, f, g, h, j),
+                None => (None, None, None, None, None, None, None, None, j),
+            })
+            .map_err(|((a1, a2, a3, a4, a5, a6, a7, a8), a9)| (a1, a2, a3, a4, a5, a6, a7, a8, a9))
+            .or(a9)
+            .map(|(a, k)| match a {
+                Some((_, (a, b, c, d, e, f, g, h, j))) => (a, b, c, d, e, f, g, h, j, k),
+                None => (None, None, None, None, None, None, None, None, None, k),
+            })
+            .map_err(|((a1, a2, a3, a4, a5, a6, a7, a8, a9), a10)| {
+                (a1, a2, a3, a4, a5, a6, a7, a8, a9, a10)
+            });
+
+        ret
     }
 }
