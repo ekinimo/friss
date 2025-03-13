@@ -8,6 +8,294 @@ use core::str;
 
 use crate::sugar::ParserSugar;
 
+
+// Usage example with nested Either types
+#[test]
+fn test_eithers() {
+    // Either<A, A> - base case
+    let simple: Either<i32, i32> = Either::Left(5);
+    let result1 = simple.deep_fold(); // Type: DeepFoldable<Zero, Zero>
+    assert_eq!(result1, 5);
+    
+    // Either<Either<A, A>, A> - one level of nesting on left
+    let nested_left: Either<Either<i32, i32>, i32> = Either::Left(Either::Right(10));
+    let result2 = nested_left.deep_fold(); // Type: DeepFoldable<Succ<Zero>, Zero>
+    assert_eq!(result2, 10);
+    
+    // Either<A, Either<A, A>> - one level of nesting on right
+    let nested_right: Either<i32, Either<i32, i32>> = Either::Right(Either::Left(15));
+    let result3 = nested_right.deep_fold(); // Type: DeepFoldable<Zero, Succ<Zero>>
+    assert_eq!(result3, 15);
+}
+
+
+   #[test]
+    fn test_either_simple_fold() {
+        let e1: Either<i32, i32> = Either::Left(42);
+        let e2: Either<i32, i32> = Either::Right(42);
+        
+        assert_eq!(e1.fold(), 42);
+        assert_eq!(e2.fold(), 42);
+    }
+    
+    #[test]
+    fn test_either3_simple_fold() {
+        let e1: Either3<i32, i32, i32> = Either3::Left(42);
+        let e2: Either3<i32, i32, i32> = Either3::Middle(42);
+        let e3: Either3<i32, i32, i32> = Either3::Right(42);
+        
+        assert_eq!(e1.fold(), 42);
+        assert_eq!(e2.fold(), 42);
+        assert_eq!(e3.fold(), 42);
+    }
+    
+    #[test]
+    fn test_either_zero_zero_deep_fold() {
+        let e1: Either<i32, i32> = Either::Left(42);
+        let e2: Either<i32, i32> = Either::Right(42);
+        
+        let result1 = DeepFoldable::<(Zero, Zero)>::deep_fold(e1);
+        let result2 = DeepFoldable::<(Zero, Zero)>::deep_fold(e2);
+        
+        assert_eq!(result1, 42);
+        assert_eq!(result2, 42);
+    }
+    
+    #[test]
+    fn test_either_succ_zero_deep_fold() {
+        // We need to explicitly specify all the types for the compiler
+        type EitherInt = Either<i32, i32>;
+        
+        // Either<Either<i32, i32>, i32>
+        let nested1: Either<EitherInt, i32> = Either::Left(Either::Left(42));
+        let nested2: Either<EitherInt, i32> = Either::Left(Either::Right(42));
+        let nested3: Either<EitherInt, i32> = Either::Right(42);
+        
+        let result1 = <Either<EitherInt, i32> as DeepFoldable<(Succ<Zero>, Zero)>>::deep_fold(nested1);
+        let result2 = <Either<EitherInt, i32> as DeepFoldable<(Succ<Zero>, Zero)>>::deep_fold(nested2);
+        let result3 = <Either<EitherInt, i32> as DeepFoldable<(Succ<Zero>, Zero)>>::deep_fold(nested3);
+        
+        assert_eq!(result1, 42);
+        assert_eq!(result2, 42);
+        assert_eq!(result3, 42);
+    }
+    
+    #[test]
+    fn test_either_zero_succ_deep_fold() {
+        // We need to explicitly specify all the types for the compiler
+        type EitherInt = Either<i32, i32>;
+        
+        // Either<i32, Either<i32, i32>>
+        let nested1: Either<i32, EitherInt> = Either::Left(42);
+        let nested2: Either<i32, EitherInt> = Either::Right(Either::Left(42));
+        let nested3: Either<i32, EitherInt> = Either::Right(Either::Right(42));
+        
+        let result1 = <Either<i32, EitherInt> as DeepFoldable<(Zero, Succ<Zero>)>>::deep_fold(nested1);
+        let result2 = <Either<i32, EitherInt> as DeepFoldable<(Zero, Succ<Zero>)>>::deep_fold(nested2);
+        let result3 = <Either<i32, EitherInt> as DeepFoldable<(Zero, Succ<Zero>)>>::deep_fold(nested3);
+        
+        assert_eq!(result1, 42);
+        assert_eq!(result2, 42);
+        assert_eq!(result3, 42);
+
+        let nested1: Either<i32, EitherInt> = Either::Left(42);
+        let nested2: Either<i32, EitherInt> = Either::Right(Either::Left(42));
+        let nested3: Either<i32, EitherInt> = Either::Right(Either::Right(42));
+
+        let result1 = nested1.deep_fold();
+        let result2 = nested2.deep_fold();
+        let result3 = nested3.deep_fold();
+        
+        assert_eq!(result1, 42);
+        assert_eq!(result2, 42);
+        assert_eq!(result3, 42);
+
+
+    }
+
+    #[test]
+    fn test_either_succ_succ_deep_fold() {
+        // We need to explicitly specify all the types for the compiler
+        type EitherInt = Either<i32, i32>;
+        
+        // Either<Either<i32, i32>, Either<i32, i32>>
+        let nested1: Either<EitherInt, EitherInt> = Either::Left(Either::Left(42));
+        let nested2: Either<EitherInt, EitherInt> = Either::Left(Either::Right(42));
+        let nested3: Either<EitherInt, EitherInt> = Either::Right(Either::Left(42));
+        let nested4: Either<EitherInt, EitherInt> = Either::Right(Either::Right(42));
+        
+        let result1 = <Either<EitherInt, EitherInt> as DeepFoldable<(Succ<Zero>, Succ<Zero>)>>::deep_fold(nested1);
+        let result2 = <Either<EitherInt, EitherInt> as DeepFoldable<(Succ<Zero>, Succ<Zero>)>>::deep_fold(nested2);
+        let result3 = <Either<EitherInt, EitherInt> as DeepFoldable<(Succ<Zero>, Succ<Zero>)>>::deep_fold(nested3);
+        let result4 = <Either<EitherInt, EitherInt> as DeepFoldable<(Succ<Zero>, Succ<Zero>)>>::deep_fold(nested4);
+        
+        assert_eq!(result1, 42);
+        assert_eq!(result2, 42);
+        assert_eq!(result3, 42);
+        assert_eq!(result4, 42);
+
+    }
+
+#[test]
+fn test_either3_deep_fold_basics() {
+    // Test basic deep_fold for Either3
+    let e1: Either3<i32, i32, i32> = Either3::Left(42);
+    let e2: Either3<i32, i32, i32> = Either3::Middle(42);
+    let e3: Either3<i32, i32, i32> = Either3::Right(42);
+    
+    let result1 = DeepFoldable::<(Zero, Zero, Zero)>::deep_fold(e1);
+    let result2 = DeepFoldable::<(Zero, Zero, Zero)>::deep_fold(e2);
+    let result3 = DeepFoldable::<(Zero, Zero, Zero)>::deep_fold(e3);
+    
+    assert_eq!(result1, 42);
+    assert_eq!(result2, 42);
+    assert_eq!(result3, 42);
+}
+
+#[test]
+fn test_either3_nested_fold() {
+    // Test deep_fold with nested Either3
+    type E3Int = Either3<i32, i32, i32>;
+    
+    // Either3<Either3<i32, i32, i32>, i32, i32>
+    let nested1: Either3<E3Int, i32, i32> = Either3::Left(Either3::Left(42));
+    let nested2: Either3<E3Int, i32, i32> = Either3::Left(Either3::Middle(42));
+    let nested3: Either3<E3Int, i32, i32> = Either3::Left(Either3::Right(42));
+    let nested4: Either3<E3Int, i32, i32> = Either3::Middle(42);
+    let nested5: Either3<E3Int, i32, i32> = Either3::Right(42);
+    
+    let result1 = <Either3<E3Int, i32, i32> as DeepFoldable<(Succ<Zero>, Zero, Zero)>>::deep_fold(nested1);
+    let result2 = <Either3<E3Int, i32, i32> as DeepFoldable<(Succ<Zero>, Zero, Zero)>>::deep_fold(nested2);
+    let result3 = <Either3<E3Int, i32, i32> as DeepFoldable<(Succ<Zero>, Zero, Zero)>>::deep_fold(nested3);
+    let result4 = <Either3<E3Int, i32, i32> as DeepFoldable<(Succ<Zero>, Zero, Zero)>>::deep_fold(nested4);
+    let result5 = <Either3<E3Int, i32, i32> as DeepFoldable<(Succ<Zero>, Zero, Zero)>>::deep_fold(nested5);
+    
+    assert_eq!(result1, 42);
+    assert_eq!(result2, 42);
+    assert_eq!(result3, 42);
+    assert_eq!(result4, 42);
+    assert_eq!(result5, 42);
+}
+
+#[test]
+fn test_either3_middle_nested_fold() {
+    // Test deep_fold with nested Either3 in middle position
+    type E3Int = Either3<i32, i32, i32>;
+    
+    // Either3<i32, Either3<i32, i32, i32>, i32>
+    let nested1: Either3<i32, E3Int, i32> = Either3::Left(42);
+    let nested2: Either3<i32, E3Int, i32> = Either3::Middle(Either3::Left(42));
+    let nested3: Either3<i32, E3Int, i32> = Either3::Middle(Either3::Middle(42));
+    let nested4: Either3<i32, E3Int, i32> = Either3::Middle(Either3::Right(42));
+    let nested5: Either3<i32, E3Int, i32> = Either3::Right(42);
+    
+    let result1 = <Either3<i32, E3Int, i32> as DeepFoldable<(Zero, Succ<Zero>, Zero)>>::deep_fold(nested1);
+    let result2 = <Either3<i32, E3Int, i32> as DeepFoldable<(Zero, Succ<Zero>, Zero)>>::deep_fold(nested2);
+    let result3 = <Either3<i32, E3Int, i32> as DeepFoldable<(Zero, Succ<Zero>, Zero)>>::deep_fold(nested3);
+    let result4 = <Either3<i32, E3Int, i32> as DeepFoldable<(Zero, Succ<Zero>, Zero)>>::deep_fold(nested4);
+    let result5 = <Either3<i32, E3Int, i32> as DeepFoldable<(Zero, Succ<Zero>, Zero)>>::deep_fold(nested5);
+    
+    assert_eq!(result1, 42);
+    assert_eq!(result2, 42);
+    assert_eq!(result3, 42);
+    assert_eq!(result4, 42);
+    assert_eq!(result5, 42);
+}
+
+#[test]
+fn test_either3_right_nested_fold() {
+    // Test deep_fold with nested Either3 in right position
+    type E3Int = Either3<i32, i32, i32>;
+    
+    // Either3<i32, i32, Either3<i32, i32, i32>>
+    let nested1: Either3<i32, i32, E3Int> = Either3::Left(42);
+    let nested2: Either3<i32, i32, E3Int> = Either3::Middle(42);
+    let nested3: Either3<i32, i32, E3Int> = Either3::Right(Either3::Left(42));
+    let nested4: Either3<i32, i32, E3Int> = Either3::Right(Either3::Middle(42));
+    let nested5: Either3<i32, i32, E3Int> = Either3::Right(Either3::Right(42));
+    
+    let result1 = <Either3<i32, i32, E3Int> as DeepFoldable<(Zero, Zero, Succ<Zero>)>>::deep_fold(nested1);
+    let result2 = <Either3<i32, i32, E3Int> as DeepFoldable<(Zero, Zero, Succ<Zero>)>>::deep_fold(nested2);
+    let result3 = <Either3<i32, i32, E3Int> as DeepFoldable<(Zero, Zero, Succ<Zero>)>>::deep_fold(nested3);
+    let result4 = <Either3<i32, i32, E3Int> as DeepFoldable<(Zero, Zero, Succ<Zero>)>>::deep_fold(nested4);
+    let result5 = <Either3<i32, i32, E3Int> as DeepFoldable<(Zero, Zero, Succ<Zero>)>>::deep_fold(nested5);
+    
+    assert_eq!(result1, 42);
+    assert_eq!(result2, 42);
+    assert_eq!(result3, 42);
+    assert_eq!(result4, 42);
+    assert_eq!(result5, 42);
+}
+
+#[test]
+fn test_either3_all_nested_fold() {
+    // Test deep_fold with nested Either3 in all positions
+    type E3Int = Either3<i32, i32, i32>;
+    
+    // Either3<Either3<i32, i32, i32>, Either3<i32, i32, i32>, Either3<i32, i32, i32>>
+    let nested1: Either3<E3Int, E3Int, E3Int> = Either3::Left(Either3::Left(42));
+    let nested2: Either3<E3Int, E3Int, E3Int> = Either3::Left(Either3::Middle(42));
+    let nested3: Either3<E3Int, E3Int, E3Int> = Either3::Left(Either3::Right(42));
+    let nested4: Either3<E3Int, E3Int, E3Int> = Either3::Middle(Either3::Left(42));
+    let nested5: Either3<E3Int, E3Int, E3Int> = Either3::Middle(Either3::Middle(42));
+    let nested6: Either3<E3Int, E3Int, E3Int> = Either3::Middle(Either3::Right(42));
+    let nested7: Either3<E3Int, E3Int, E3Int> = Either3::Right(Either3::Left(42));
+    let nested8: Either3<E3Int, E3Int, E3Int> = Either3::Right(Either3::Middle(42));
+    let nested9: Either3<E3Int, E3Int, E3Int> = Either3::Right(Either3::Right(42));
+    
+    let result1 = <Either3<E3Int, E3Int, E3Int> as DeepFoldable<(Succ<Zero>, Succ<Zero>, Succ<Zero>)>>::deep_fold(nested1);
+    let result2 = <Either3<E3Int, E3Int, E3Int> as DeepFoldable<(Succ<Zero>, Succ<Zero>, Succ<Zero>)>>::deep_fold(nested2);
+    let result3 = <Either3<E3Int, E3Int, E3Int> as DeepFoldable<(Succ<Zero>, Succ<Zero>, Succ<Zero>)>>::deep_fold(nested3);
+    let result4 = <Either3<E3Int, E3Int, E3Int> as DeepFoldable<(Succ<Zero>, Succ<Zero>, Succ<Zero>)>>::deep_fold(nested4);
+    let result5 = <Either3<E3Int, E3Int, E3Int> as DeepFoldable<(Succ<Zero>, Succ<Zero>, Succ<Zero>)>>::deep_fold(nested5);
+    let result6 = <Either3<E3Int, E3Int, E3Int> as DeepFoldable<(Succ<Zero>, Succ<Zero>, Succ<Zero>)>>::deep_fold(nested6);
+    let result7 = <Either3<E3Int, E3Int, E3Int> as DeepFoldable<(Succ<Zero>, Succ<Zero>, Succ<Zero>)>>::deep_fold(nested7);
+    let result8 = <Either3<E3Int, E3Int, E3Int> as DeepFoldable<(Succ<Zero>, Succ<Zero>, Succ<Zero>)>>::deep_fold(nested8);
+    let result9 = <Either3<E3Int, E3Int, E3Int> as DeepFoldable<(Succ<Zero>, Succ<Zero>, Succ<Zero>)>>::deep_fold(nested9);
+    
+    assert_eq!(result1, 42);
+    assert_eq!(result2, 42);
+    assert_eq!(result3, 42);
+    assert_eq!(result4, 42);
+    assert_eq!(result5, 42);
+    assert_eq!(result6, 42);
+    assert_eq!(result7, 42);
+    assert_eq!(result8, 42);
+    assert_eq!(result9, 42);
+}
+
+
+
+#[test]
+fn test_either_with_string_values() {
+    // Test deep_fold with string values
+    let e1: Either<String, String> = Either::Left("hello".to_string());
+    let e2: Either<String, String> = Either::Right("world".to_string());
+    
+    let result1 = DeepFoldable::<(Zero, Zero)>::deep_fold(e1);
+    let result2 = DeepFoldable::<(Zero, Zero)>::deep_fold(e2);
+    
+    assert_eq!(result1, "hello");
+    assert_eq!(result2, "world");
+    
+    // Test nested Either with strings
+    let nested1: Either<Either<String, String>, String> = 
+        Either::Left(Either::Left("nested".to_string()));
+    let nested2: Either<Either<String, String>, String> = 
+        Either::Left(Either::Right("hello".to_string()));
+    let nested3: Either<Either<String, String>, String> = 
+        Either::Right("world".to_string());
+    
+    let result1 = <Either<Either<String, String>, String> as DeepFoldable<(Succ<Zero>, Zero)>>::deep_fold(nested1);
+    let result2 = <Either<Either<String, String>, String> as DeepFoldable<(Succ<Zero>, Zero)>>::deep_fold(nested2);
+    let result3 = <Either<Either<String, String>, String> as DeepFoldable<(Succ<Zero>, Zero)>>::deep_fold(nested3);
+    
+    assert_eq!(result1, "nested");
+    assert_eq!(result2, "hello");
+    assert_eq!(result3, "world");
+}
+
+
 /// Test recursively defined parsers
 #[test]
 fn test_recursive_parser() {
@@ -31,7 +319,7 @@ fn test_recursive_parser() {
         Box::new(
             nested
                 .alt(empty)
-                .map_err(|(a, b)| a)
+                .map_err(|(a, _b)| a)
                 .map(|either| match either {
                     Either::Left(depth) => depth,
                     Either::Right(empty_result) => empty_result,
@@ -64,6 +352,8 @@ fn test_rev_apply<'a>() {
         _ => assert!(false, "Parser failed"),
     }
 }
+
+
 
 /// Test chaining parsers with and_then
 #[test]
@@ -260,7 +550,7 @@ fn test_at_most_n_parser() {
     )
         .seq()
         .map_err(|_| "fail")
-        .at_most_n::<3>("at most 3 failed");
+        .at_most_n::<3>();
 
     let result = parser.parse("abab");
 
@@ -798,3 +1088,4 @@ mod expr_parser {
         );
     }
 }
+

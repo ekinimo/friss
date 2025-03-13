@@ -27,10 +27,7 @@
 //!
 //! assert_eq!(combined.parse("123"), Ok(("3", "12".to_string())));
 //! ```
-use std::borrow::Borrow;
 use std::cell::RefCell;
-use std::time::TryFromFloatSecsError;
-
 use crate::types::*;
 
 /// Trait for items within a `Parsable` type.
@@ -454,13 +451,13 @@ pub trait Parser<Input: Parsable<Error>, Output: ParserOutput, Error: Clone> {
     /// use friss::*;
     ///
     /// let parser = "a".make_literal_matcher("Expected a")
-    ///     .at_most_n::<3>("At most 3 'a's");
+    ///     .at_most_n::<3>();
     ///
     /// // Will parse up to 3 'a's
     /// let result = parser.parse("aaaaa");
     /// assert_eq!(result.unwrap().0, "aa"); // Remaining: "aa"
     /// ```
-    fn at_most_n<const N: usize>(self, err: Error) -> impl AtMostNParser<N, Input, Output, Error>
+    fn at_most_n<const N: usize>(self) -> impl AtMostNParser<N, Input, Output, Error>
     where
         Self: Sized,
         Error: Clone,
@@ -1147,6 +1144,7 @@ where
 {
     move |input: Input| Err((input, err.clone()))
 }
+
 /// Creates a recursive parser that can reference itself.
 pub fn recursive<Input, Output, Error, F>(f: F) -> Box<dyn Parser<Input, Output, Error>>
 where
