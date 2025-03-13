@@ -163,7 +163,8 @@ pub mod core;
 pub mod parsers;
 pub mod sugar;
 pub mod types;
-
+pub mod state;
+pub mod memo;
 // Include examples in tests
 #[cfg(test)]
 pub mod tests;
