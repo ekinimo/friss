@@ -41,6 +41,7 @@ impl<A, B> Either<A, B> {
     where
         F: FnMut(B) -> C,
     {
+        
         match self {
             Either::Right(a) => Either::Right(f(a)),
             Either::Left(x) => Either::Left(x),
@@ -59,149 +60,59 @@ impl<A, B> Either<A, B> {
     }
 }
 
-/// A sum type representing one of three possible values.
-#[derive(Copy, Clone, PartialEq, PartialOrd, Eq, Ord, Hash, Debug)]
-pub enum Either3<A1, A2, A3> {
-    /// The left variant.
-    Left(A1),
-    /// The middle variant.
-    Middle(A2),
-    /// The right variant.
-    Right(A3),
+
+// Macro to define Either types
+macro_rules! define_either {
+    ($($name:ident($($param:ident),+)),+) => {
+        $(
+            #[derive(Copy, Clone, PartialEq, PartialOrd, Eq, Ord, Hash, Debug)]
+            pub enum $name<$($param),+> {
+                $(
+                    $param($param),
+                )+
+            }
+        )+
+    };
 }
 
-/// A sum type representing one of four possible values.
-#[derive(Copy, Clone, PartialEq, PartialOrd, Eq, Ord, Hash, Debug)]
-pub enum Either4<A1, A2, A3, A4> {
-    /// The first variant.
-    _1(A1),
-    /// The second variant.
-    _2(A2),
-    /// The third variant.
-    _3(A3),
-    /// The fourth variant.
-    _4(A4),
+define_either! {
+    Either3(Left, Middle, Right),
+    Either4(_1, _2, _3, _4),
+    Either5(_1, _2, _3, _4, _5),
+    Either6(_1, _2, _3, _4, _5, _6),
+    Either7(_1, _2, _3, _4, _5, _6, _7),
+    Either8(_1, _2, _3, _4, _5, _6, _7, _8),
+    Either9(_1, _2, _3, _4, _5, _6, _7, _8, _9),
+    Either10(_1, _2, _3, _4, _5, _6, _7, _8, _9, _10)
 }
 
-/// A sum type representing one of five possible values.
-#[derive(Copy, Clone, PartialEq, PartialOrd, Eq, Ord, Hash, Debug)]
-pub enum Either5<A1, A2, A3, A4, A5> {
-    /// The first variant.
-    _1(A1),
-    /// The second variant.
-    _2(A2),
-    /// The third variant.
-    _3(A3),
-    /// The fourth variant.
-    _4(A4),
-    /// The fifth variant.
-    _5(A5),
+// Macro to implement map method for Either types
+macro_rules! impl_either_map {
+    ($either:ident, $($variant:ident => $type1:ident => $type2:ident =>  $fun:ident),+) => {
+        impl<$($type1),+> $either<$($type1),+>
+        {
+            pub fn m_map<$($type2,)+ >(
+                self,
+                $($fun: impl FnOnce($type1) -> $type2,)+
+            ) -> $either<$($type2),+>
+            {
+                match self {
+                    $($either::$variant(a) => $either::$variant($fun(a)),)+
+                }
+            }
+        }
+    };
 }
 
-/// A sum type representing one of six possible values.
-#[derive(Copy, Clone, PartialEq, PartialOrd, Eq, Ord, Hash, Debug)]
-pub enum Either6<A1, A2, A3, A4, A5, A6> {
-    /// The first variant.
-    _1(A1),
-    /// The second variant.
-    _2(A2),
-    /// The third variant.
-    _3(A3),
-    /// The fourth variant.
-    _4(A4),
-    /// The fifth variant.
-    _5(A5),
-    /// The sixth variant.
-    _6(A6),
-}
-
-/// A sum type representing one of seven possible values.
-#[derive(Copy, Clone, PartialEq, PartialOrd, Eq, Ord, Hash, Debug)]
-pub enum Either7<A1, A2, A3, A4, A5, A6, A7> {
-    /// The first variant.
-    _1(A1),
-    /// The second variant.
-    _2(A2),
-    /// The third variant.
-    _3(A3),
-    /// The fourth variant.
-    _4(A4),
-    /// The fifth variant.
-    _5(A5),
-    /// The sixth variant.
-    _6(A6),
-    /// The seventh variant.
-    _7(A7),
-}
-
-/// A sum type representing one of eight possible values.
-#[derive(Copy, Clone, PartialEq, PartialOrd, Eq, Ord, Hash, Debug)]
-pub enum Either8<A1, A2, A3, A4, A5, A6, A7, A8> {
-    /// The first variant.
-    _1(A1),
-    /// The second variant.
-    _2(A2),
-    /// The third variant.
-    _3(A3),
-    /// The fourth variant.
-    _4(A4),
-    /// The fifth variant.
-    _5(A5),
-    /// The sixth variant.
-    _6(A6),
-    /// The seventh variant.
-    _7(A7),
-    /// The eighth variant.
-    _8(A8),
-}
-
-/// A sum type representing one of nine possible values.
-#[derive(Copy, Clone, PartialEq, PartialOrd, Eq, Ord, Hash, Debug)]
-pub enum Either9<A1, A2, A3, A4, A5, A6, A7, A8, A9> {
-    /// The first variant.
-    _1(A1),
-    /// The second variant.
-    _2(A2),
-    /// The third variant.
-    _3(A3),
-    /// The fourth variant.
-    _4(A4),
-    /// The fifth variant.
-    _5(A5),
-    /// The sixth variant.
-    _6(A6),
-    /// The seventh variant.
-    _7(A7),
-    /// The eighth variant.
-    _8(A8),
-    /// The ninth variant.
-    _9(A9),
-}
-
-/// A sum type representing one of ten possible values.
-#[derive(Copy, Clone, PartialEq, PartialOrd, Eq, Ord, Hash, Debug)]
-pub enum Either10<A1, A2, A3, A4, A5, A6, A7, A8, A9, A10> {
-    /// The first variant.
-    _1(A1),
-    /// The second variant.
-    _2(A2),
-    /// The third variant.
-    _3(A3),
-    /// The fourth variant.
-    _4(A4),
-    /// The fifth variant.
-    _5(A5),
-    /// The sixth variant.
-    _6(A6),
-    /// The seventh variant.
-    _7(A7),
-    /// The eighth variant.
-    _8(A8),
-    /// The ninth variant.
-    _9(A9),
-    /// The tenth variant.
-    _10(A10),
-}
+impl_either_map!(Either, Left => A => B => f, Right => C => D => g);
+impl_either_map!(Either3, Left => A => B => f, Middle => C => D => g, Right => E => F => h);
+impl_either_map!(Either4, _1 => A1 => B1 => f1, _2 => A2 => B2 => f2, _3 => A3 => B3 => f3, _4 => A4 => B4 => f4);
+impl_either_map!(Either5, _1 => A1 => B1 => f1, _2 => A2 => B2 => f2, _3 => A3 => B3 => f3, _4 => A4 => B4 => f4, _5 => A5 => B5 => f5);
+impl_either_map!(Either6, _1 => A1 => B1 => f1, _2 => A2 => B2 => f2, _3 => A3 => B3 => f3, _4 => A4 => B4 => f4, _5 => A5 => B5 => f5, _6 => A6 => B6 => f6);
+impl_either_map!(Either7, _1 => A1 => B1 => f1, _2 => A2 => B2 => f2, _3 => A3 => B3 => f3, _4 => A4 => B4 => f4, _5 => A5 => B5 => f5, _6 => A6 => B6 => f6, _7 => A7 => B7 => f7);
+impl_either_map!(Either8, _1 => A1 => B1 => f1, _2 => A2 => B2 => f2, _3 => A3 => B3 => f3, _4 => A4 => B4 => f4, _5 => A5 => B5 => f5, _6 => A6 => B6 => f6, _7 => A7 => B7 => f7, _8 => A8 => B8 => f8);
+impl_either_map!(Either9, _1 => A1 => B1 => f1, _2 => A2 => B2 => f2, _3 => A3 => B3 => f3, _4 => A4 => B4 => f4, _5 => A5 => B5 => f5, _6 => A6 => B6 => f6, _7 => A7 => B7 => f7, _8 => A8 => B8 => f8, _9 => A9 => B9 => f9);
+impl_either_map!(Either10, _1 => A1 => B1 => f1, _2 => A2 => B2 => f2, _3 => A3 => B3 => f3, _4 => A4 => B4 => f4, _5 => A5 => B5 => f5, _6 => A6 => B6 => f6, _7 => A7 => B7 => f7, _8 => A8 => B8 => f8, _9 => A9 => B9 => f9, _10 => A10 => B10 => f10);
 
 impl<A1, A2, A3> Either3<A1, A2, A3> {
     /// Maps all variants with separate functions.
@@ -211,6 +122,8 @@ impl<A1, A2, A3> Either3<A1, A2, A3> {
         F2: FnMut(A2) -> B2,
         F3: FnMut(A3) -> B3,
     {
+
+        
         match self {
             Either3::Left(a) => Either3::Left(f1(a)),
             Either3::Middle(a) => Either3::Middle(f2(a)),
