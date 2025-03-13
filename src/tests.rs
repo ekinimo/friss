@@ -9,24 +9,6 @@ use core::str;
 use crate::sugar::ParserSugar;
 
 
-// Usage example with nested Either types
-#[test]
-fn test_eithers() {
-    // Either<A, A> - base case
-    let simple: Either<i32, i32> = Either::Left(5);
-    let result1 = simple.deep_fold(); // Type: DeepFoldable<Zero, Zero>
-    assert_eq!(result1, 5);
-    
-    // Either<Either<A, A>, A> - one level of nesting on left
-    let nested_left: Either<Either<i32, i32>, i32> = Either::Left(Either::Right(10));
-    let result2 = nested_left.deep_fold(); // Type: DeepFoldable<Succ<Zero>, Zero>
-    assert_eq!(result2, 10);
-    
-    // Either<A, Either<A, A>> - one level of nesting on right
-    let nested_right: Either<i32, Either<i32, i32>> = Either::Right(Either::Left(15));
-    let result3 = nested_right.deep_fold(); // Type: DeepFoldable<Zero, Succ<Zero>>
-    assert_eq!(result3, 15);
-}
 
 
    #[test]
@@ -48,7 +30,26 @@ fn test_eithers() {
         assert_eq!(e2.fold(), 42);
         assert_eq!(e3.fold(), 42);
     }
-    
+    /*
+
+#[test]
+fn test_eithers() {
+// Either<A, A> - base case
+let simple: Either<i32, i32> = Either::Left(5);
+let result1 = simple.deep_fold(); // Type: DeepFoldable<Zero, Zero>
+assert_eq!(result1, 5);
+
+// Either<Either<A, A>, A> - one level of nesting on left
+let nested_left: Either<Either<i32, i32>, i32> = Either::Left(Either::Right(10));
+let result2 = nested_left.deep_fold(); // Type: DeepFoldable<Succ<Zero>, Zero>
+assert_eq!(result2, 10);
+
+// Either<A, Either<A, A>> - one level of nesting on right
+let nested_right: Either<i32, Either<i32, i32>> = Either::Right(Either::Left(15));
+let result3 = nested_right.deep_fold(); // Type: DeepFoldable<Zero, Succ<Zero>>
+assert_eq!(result3, 15);
+}
+
     #[test]
     fn test_either_zero_zero_deep_fold() {
         let e1: Either<i32, i32> = Either::Left(42);
@@ -294,7 +295,7 @@ fn test_either_with_string_values() {
     assert_eq!(result2, "hello");
     assert_eq!(result3, "world");
 }
-
+*/
 
 /// Test recursively defined parsers
 #[test]

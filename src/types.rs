@@ -1375,6 +1375,1179 @@ impl<A> Foldable for Either<A, A> {
     }
 }
 
+
+/// Trait for types that can be folded to a common result type.
+pub trait MultiFoldable<Zero> {
+    /// The result type of the fold operation.
+    type Result;
+
+    /// Folds the value into a single result.
+    fn multi_fold(self) -> Self::Result;
+}
+
+
+impl <T,A> MultiFoldable<Zero> for T where
+    T : MultiFoldable1<Result = A>
+{
+    type Result = A;
+
+    fn multi_fold(self) -> Self::Result {
+        self.multi_fold_1()
+    }
+}
+
+
+impl <T,A> MultiFoldable<S<Zero>> for T where
+    T : MultiFoldable2<Result = A>
+{
+    type Result = A;
+
+    fn multi_fold(self) -> Self::Result {
+        self.multi_fold_2()
+    }
+}
+
+impl <T,A> MultiFoldable<S<S<Zero>>> for T where
+    T : MultiFoldable3<Result = A>
+{
+    type Result = A;
+
+    fn multi_fold(self) -> Self::Result {
+        self.multi_fold_3()
+    }
+}
+
+impl <T,A> MultiFoldable<S<S<S<Zero>>>> for T where
+    T : MultiFoldable4<Result = A>
+{
+    type Result = A;
+
+    fn multi_fold(self) -> Self::Result {
+        self.multi_fold_4()
+    }
+}
+
+impl <T,A> MultiFoldable<S<S<S<S<Zero>>>>> for T where
+    T : MultiFoldable5<Result = A>
+{
+    type Result = A;
+
+    fn multi_fold(self) -> Self::Result {
+        self.multi_fold_5()
+    }
+}
+
+
+
+
+/// Trait for types that can be folded to a common result type.
+pub trait MultiFoldable1 {
+    /// The result type of the fold operation.
+    type Result;
+
+    /// Folds the value into a single result.
+    fn multi_fold_1(self) -> Self::Result;
+}
+
+/// Trait for types that can be folded to a common result type.
+pub trait MultiFoldable2 {
+    /// The result type of the fold operation.
+    type Result;
+
+    /// Folds the value into a single result.
+    fn multi_fold_2(self) -> Self::Result;
+}
+
+/// Trait for types that can be folded to a common result type.
+pub trait MultiFoldable3 {
+    /// The result type of the fold operation.
+    type Result;
+
+    /// Folds the value into a single result.
+    fn multi_fold_3(self) -> Self::Result;
+}
+
+/// Trait for types that can be folded to a common result type.
+pub trait MultiFoldable4 {
+    /// The result type of the fold operation.
+    type Result;
+
+    /// Folds the value into a single result.
+    fn multi_fold_4(self) -> Self::Result;
+}
+
+/// Trait for types that can be folded to a common result type.
+pub trait MultiFoldable5 {
+    /// The result type of the fold operation.
+    type Result;
+
+    /// Folds the value into a single result.
+    fn multi_fold_5(self) -> Self::Result;
+}
+
+
+pub struct Zero;
+pub struct S<N>(std::marker::PhantomData<N>);
+
+impl<A,B,C> MultiFoldable1 for Either<B,C>
+where
+    B:Foldable<Result = A>,
+    C:Foldable<Result = A>,
+
+{
+    type Result = A;
+    fn multi_fold_1(self) -> A {
+        match self {
+            Either::Left(a) => a.fold(),
+            Either::Right(b) => b.fold(),
+        }
+    }
+}
+
+impl<A,B,C> MultiFoldable2 for Either<B,C>
+where
+    B:MultiFoldable1<Result = A>,
+    C:MultiFoldable1<Result = A>,
+
+{
+    type Result = A;
+    fn multi_fold_2(self) -> A {
+        match self {
+            Either::Left(a) => a.multi_fold_1(),
+            Either::Right(b) => b.multi_fold_1(),
+        }
+    }
+}
+
+impl<A,B,C> MultiFoldable3 for Either<B,C>
+where
+    B:MultiFoldable2<Result = A>,
+    C:MultiFoldable2<Result = A>,
+
+{
+    type Result = A;
+    fn multi_fold_3(self) -> A {
+        match self {
+            Either::Left(a) => a.multi_fold_2(),
+            Either::Right(b) => b.multi_fold_2(),
+        }
+    }
+}
+
+impl<A,B,C> MultiFoldable4 for Either<B,C>
+where
+    B:MultiFoldable3<Result = A>,
+    C:MultiFoldable3<Result = A>,
+
+{
+    type Result = A;
+    fn multi_fold_4(self) -> A {
+        match self {
+            Either::Left(a) => a.multi_fold_3(),
+            Either::Right(b) => b.multi_fold_3(),
+        }
+    }
+}
+
+impl<A,B,C> MultiFoldable5 for Either<B,C>
+where
+    B:MultiFoldable4<Result = A>,
+    C:MultiFoldable4<Result = A>,
+
+{
+    type Result = A;
+    fn multi_fold_5(self) -> A {
+        match self {
+            Either::Left(a) => a.multi_fold_4(),
+            Either::Right(b) => b.multi_fold_4(),
+        }
+    }
+}
+
+
+impl<A,B,C,D> MultiFoldable1 for Either3<B,C,D>
+where
+    B:Foldable<Result = A>,
+    C:Foldable<Result = A>,
+    D:Foldable<Result = A>,
+
+{
+    type Result = A;
+    fn multi_fold_1(self) -> A {
+        match self {
+            Either3::Left(a) => a.fold(),
+            Either3::Middle(b) => b.fold(),
+            Either3::Right(c) => c.fold(),
+        }
+    }
+}
+
+impl<A,B,C,D> MultiFoldable2 for Either3<B,C,D>
+where
+    B:MultiFoldable1<Result = A>,
+    C:MultiFoldable1<Result = A>,
+    D:MultiFoldable1<Result = A>,
+
+{
+    type Result = A;
+    fn multi_fold_2(self) -> A {
+        match self {
+            Either3::Left(a) => a.multi_fold_1(),
+            Either3::Middle(b) => b.multi_fold_1(),
+            Either3::Right(c) => c.multi_fold_1(),
+        }
+    }
+}
+
+impl<A,B,C,D> MultiFoldable3 for Either3<B,C,D>
+where
+    B:MultiFoldable2<Result = A>,
+    C:MultiFoldable2<Result = A>,
+    D:MultiFoldable2<Result = A>,
+
+{
+    type Result = A;
+    fn multi_fold_3(self) -> A {
+        match self {
+            Either3::Left(a) => a.multi_fold_2(),
+            Either3::Middle(b) => b.multi_fold_2(),
+            Either3::Right(c) => c.multi_fold_2(),
+        }
+    }
+}
+
+impl<A,B,C,D> MultiFoldable4 for Either3<B,C,D>
+where
+    B:MultiFoldable3<Result = A>,
+    C:MultiFoldable3<Result = A>,
+    D:MultiFoldable3<Result = A>,
+
+{
+    type Result = A;
+    fn multi_fold_4(self) -> A {
+        match self {
+            Either3::Left(a) => a.multi_fold_3(),
+            Either3::Middle(b) => b.multi_fold_3(),
+            Either3::Right(c) => c.multi_fold_3(),
+        }
+    }
+}
+
+impl<A,B,C,D> MultiFoldable5 for Either3<B,C,D>
+where
+    B:MultiFoldable4<Result = A>,
+    C:MultiFoldable4<Result = A>,
+    D:MultiFoldable4<Result = A>,
+
+{
+    type Result = A;
+    fn multi_fold_5(self) -> A {
+        match self {
+            Either3::Left(a) => a.multi_fold_4(),
+            Either3::Middle(b) => b.multi_fold_4(),
+            Either3::Right(c) => c.multi_fold_4(),
+        }
+    }
+}
+
+
+impl<A,B,C,D,E> MultiFoldable1 for Either4<B,C,D,E>
+where
+    B:Foldable<Result = A>,
+    C:Foldable<Result = A>,
+    D:Foldable<Result = A>,
+    E:Foldable<Result = A>,
+
+{
+    type Result = A;
+    fn multi_fold_1(self) -> A {
+        match self {
+            Either4::_1(a) => a.fold(),
+            Either4::_2(a) => a.fold(),
+            Either4::_3(a) => a.fold(),
+            Either4::_4(a) => a.fold(),
+        }
+    }
+}
+
+impl<A,B,C,D,E> MultiFoldable2 for Either4<B,C,D,E>
+where
+    B:MultiFoldable1<Result = A>,
+    C:MultiFoldable1<Result = A>,
+    D:MultiFoldable1<Result = A>,
+    E:MultiFoldable1<Result = A>,
+
+{
+    type Result = A;
+    fn multi_fold_2(self) -> A {
+        match self {
+            Either4::_1(a) => a.multi_fold_1(),
+            Either4::_2(a) => a.multi_fold_1(),
+            Either4::_3(a) => a.multi_fold_1(),
+            Either4::_4(a) => a.multi_fold_1(),
+        }
+    }
+}
+
+impl<A,B,C,D,E> MultiFoldable3 for Either4<B,C,D,E>
+where
+    B:MultiFoldable2<Result = A>,
+    C:MultiFoldable2<Result = A>,
+    D:MultiFoldable2<Result = A>,
+    E:MultiFoldable2<Result = A>,
+
+{
+    type Result = A;
+    fn multi_fold_3(self) -> A {
+        match self {
+            Either4::_1(a) => a.multi_fold_2(),
+            Either4::_2(a) => a.multi_fold_2(),
+            Either4::_3(a) => a.multi_fold_2(),
+            Either4::_4(a) => a.multi_fold_2(),
+        }
+    }
+}
+
+impl<A,B,C,D,E> MultiFoldable4 for Either4<B,C,D,E>
+where
+    B:MultiFoldable3<Result = A>,
+    C:MultiFoldable3<Result = A>,
+    D:MultiFoldable3<Result = A>,
+    E:MultiFoldable3<Result = A>,
+{
+    type Result = A;
+    fn multi_fold_4(self) -> A {
+        match self {
+            Either4::_1(a) => a.multi_fold_3(),
+            Either4::_2(a) => a.multi_fold_3(),
+            Either4::_3(a) => a.multi_fold_3(),
+            Either4::_4(a) => a.multi_fold_3(),
+        }
+    }
+}
+
+impl<A,B,C,D,E> MultiFoldable5 for Either4<B,C,D,E>
+where
+    B:MultiFoldable4<Result = A>,
+    C:MultiFoldable4<Result = A>,
+    D:MultiFoldable4<Result = A>,
+    E:MultiFoldable4<Result = A>,
+{
+    type Result = A;
+    fn multi_fold_5(self) -> A {
+        match self {
+            Either4::_1(a) => a.multi_fold_4(),
+            Either4::_2(a) => a.multi_fold_4(),
+            Either4::_3(a) => a.multi_fold_4(),
+            Either4::_4(a) => a.multi_fold_4(),
+        }
+    }
+}
+
+
+impl<A,B,C,D,E,F> MultiFoldable1 for Either5<B,C,D,E,F>
+where
+    B:Foldable<Result = A>,
+    C:Foldable<Result = A>,
+    D:Foldable<Result = A>,
+    E:Foldable<Result = A>,
+    F:Foldable<Result = A>,
+
+{
+    type Result = A;
+    fn multi_fold_1(self) -> A {
+        match self {
+            Either5::_1(a) => a.fold(),
+            Either5::_2(a) => a.fold(),
+            Either5::_3(a) => a.fold(),
+            Either5::_4(a) => a.fold(),
+            Either5::_5(a) => a.fold(),
+        }
+    }
+}
+
+impl<A,B,C,D,E,F> MultiFoldable2 for Either5<B,C,D,E,F>
+where
+    B:MultiFoldable1<Result = A>,
+    C:MultiFoldable1<Result = A>,
+    D:MultiFoldable1<Result = A>,
+    E:MultiFoldable1<Result = A>,
+    F:MultiFoldable1<Result = A>,
+
+{
+    type Result = A;
+    fn multi_fold_2(self) -> A {
+        match self {
+            Either5::_1(a) => a.multi_fold_1(),
+            Either5::_2(a) => a.multi_fold_1(),
+            Either5::_3(a) => a.multi_fold_1(),
+            Either5::_4(a) => a.multi_fold_1(),
+            Either5::_5(a) => a.multi_fold_1(),
+        }
+    }
+}
+
+impl<A,B,C,D,E,F> MultiFoldable3 for Either5<B,C,D,E,F>
+where
+    B:MultiFoldable2<Result = A>,
+    C:MultiFoldable2<Result = A>,
+    D:MultiFoldable2<Result = A>,
+    E:MultiFoldable2<Result = A>,
+    F:MultiFoldable2<Result = A>,
+
+{
+    type Result = A;
+    fn multi_fold_3(self) -> A {
+        match self {
+            Either5::_1(a) => a.multi_fold_2(),
+            Either5::_2(a) => a.multi_fold_2(),
+            Either5::_3(a) => a.multi_fold_2(),
+            Either5::_4(a) => a.multi_fold_2(),
+            Either5::_5(a) => a.multi_fold_2(),
+        }
+    }
+}
+
+impl<A,B,C,D,E,F> MultiFoldable4 for Either5<B,C,D,E,F>
+where
+    B:MultiFoldable3<Result = A>,
+    C:MultiFoldable3<Result = A>,
+    D:MultiFoldable3<Result = A>,
+    E:MultiFoldable3<Result = A>,
+    F:MultiFoldable3<Result = A>,
+
+{
+    type Result = A;
+    fn multi_fold_4(self) -> A {
+        match self {
+            Either5::_1(a) => a.multi_fold_3(),
+            Either5::_2(a) => a.multi_fold_3(),
+            Either5::_3(a) => a.multi_fold_3(),
+            Either5::_4(a) => a.multi_fold_3(),
+            Either5::_5(a) => a.multi_fold_3(),
+        }
+    }
+}
+
+impl<A,B,C,D,E,F> MultiFoldable5 for Either5<B,C,D,E,F>
+where
+    B:MultiFoldable4<Result = A>,
+    C:MultiFoldable4<Result = A>,
+    D:MultiFoldable4<Result = A>,
+    E:MultiFoldable4<Result = A>,
+    F:MultiFoldable4<Result = A>,
+
+{
+    type Result = A;
+    fn multi_fold_5(self) -> A {
+        match self {
+            Either5::_1(a) => a.multi_fold_4(),
+            Either5::_2(a) => a.multi_fold_4(),
+            Either5::_3(a) => a.multi_fold_4(),
+            Either5::_4(a) => a.multi_fold_4(),
+            Either5::_5(a) => a.multi_fold_4(),
+        }
+    }
+}
+
+
+
+impl<A,B,C,D,E,F,G> MultiFoldable1 for Either6<B,C,D,E,F,G>
+where
+    B:Foldable<Result = A>,
+    C:Foldable<Result = A>,
+    D:Foldable<Result = A>,
+    E:Foldable<Result = A>,
+    F:Foldable<Result = A>,
+    G:Foldable<Result = A>,
+
+{
+    type Result = A;
+    fn multi_fold_1(self) -> A {
+        match self {
+            Either6::_1(a) => a.fold(),
+            Either6::_2(a) => a.fold(),
+            Either6::_3(a) => a.fold(),
+            Either6::_4(a) => a.fold(),
+            Either6::_5(a) => a.fold(),
+            Either6::_6(a) => a.fold(),
+        }
+    }
+}
+
+impl<A,B,C,D,E,F,G> MultiFoldable2 for Either6<B,C,D,E,F,G>
+where
+    B:MultiFoldable1<Result = A>,
+    C:MultiFoldable1<Result = A>,
+    D:MultiFoldable1<Result = A>,
+    E:MultiFoldable1<Result = A>,
+    F:MultiFoldable1<Result = A>,
+    G:MultiFoldable1<Result = A>,
+
+{
+    type Result = A;
+    fn multi_fold_2(self) -> A {
+        match self {
+            Either6::_1(a) => a.multi_fold_1(),
+            Either6::_2(a) => a.multi_fold_1(),
+            Either6::_3(a) => a.multi_fold_1(),
+            Either6::_4(a) => a.multi_fold_1(),
+            Either6::_5(a) => a.multi_fold_1(),
+            Either6::_6(a) => a.multi_fold_1(),
+        }
+    }
+}
+
+impl<A,B,C,D,E,F,G> MultiFoldable3 for Either6<B,C,D,E,F,G>
+where
+    B:MultiFoldable2<Result = A>,
+    C:MultiFoldable2<Result = A>,
+    D:MultiFoldable2<Result = A>,
+    E:MultiFoldable2<Result = A>,
+    F:MultiFoldable2<Result = A>,
+    G:MultiFoldable2<Result = A>,
+
+{
+    type Result = A;
+    fn multi_fold_3(self) -> A {
+        match self {
+            Either6::_1(a) => a.multi_fold_2(),
+            Either6::_2(a) => a.multi_fold_2(),
+            Either6::_3(a) => a.multi_fold_2(),
+            Either6::_4(a) => a.multi_fold_2(),
+            Either6::_5(a) => a.multi_fold_2(),
+            Either6::_6(a) => a.multi_fold_2(),
+        }
+    }
+}
+
+impl<A,B,C,D,E,F,G> MultiFoldable4 for Either6<B,C,D,E,F,G>
+where
+    B:MultiFoldable3<Result = A>,
+    C:MultiFoldable3<Result = A>,
+    D:MultiFoldable3<Result = A>,
+    E:MultiFoldable3<Result = A>,
+    F:MultiFoldable3<Result = A>,
+    G:MultiFoldable3<Result = A>,
+
+{
+    type Result = A;
+    fn multi_fold_4(self) -> A {
+        match self {
+            Either6::_1(a) => a.multi_fold_3(),
+            Either6::_2(a) => a.multi_fold_3(),
+            Either6::_3(a) => a.multi_fold_3(),
+            Either6::_4(a) => a.multi_fold_3(),
+            Either6::_5(a) => a.multi_fold_3(),
+            Either6::_6(a) => a.multi_fold_3(),
+        }
+    }
+}
+
+impl<A,B,C,D,E,F,G> MultiFoldable5 for Either6<B,C,D,E,F,G>
+where
+    B:MultiFoldable4<Result = A>,
+    C:MultiFoldable4<Result = A>,
+    D:MultiFoldable4<Result = A>,
+    E:MultiFoldable4<Result = A>,
+    F:MultiFoldable4<Result = A>,
+    G:MultiFoldable4<Result = A>,
+
+{
+    type Result = A;
+    fn multi_fold_5(self) -> A {
+        match self {
+            Either6::_1(a) => a.multi_fold_4(),
+            Either6::_2(a) => a.multi_fold_4(),
+            Either6::_3(a) => a.multi_fold_4(),
+            Either6::_4(a) => a.multi_fold_4(),
+            Either6::_5(a) => a.multi_fold_4(),
+            Either6::_6(a) => a.multi_fold_4(),
+        }
+    }
+}
+
+
+impl<A,B,C,D,E,F,G, H> MultiFoldable1 for Either7<B,C,D,E,F,G, H>
+where
+    B:Foldable<Result = A>,
+    C:Foldable<Result = A>,
+    D:Foldable<Result = A>,
+    E:Foldable<Result = A>,
+    F:Foldable<Result = A>,
+    G:Foldable<Result = A>,
+    H:Foldable<Result = A>,
+
+{
+    type Result = A;
+    fn multi_fold_1(self) -> A {
+        match self {
+            Either7::_1(a) => a.fold(),
+            Either7::_2(a) => a.fold(),
+            Either7::_3(a) => a.fold(),
+            Either7::_4(a) => a.fold(),
+            Either7::_5(a) => a.fold(),
+            Either7::_6(a) => a.fold(),
+            Either7::_7(a) => a.fold(),
+        }
+    }
+}
+
+impl<A,B,C,D,E,F,G, H> MultiFoldable2 for Either7<B,C,D,E,F,G, H>
+where
+    B:MultiFoldable1<Result = A>,
+    C:MultiFoldable1<Result = A>,
+    D:MultiFoldable1<Result = A>,
+    E:MultiFoldable1<Result = A>,
+    F:MultiFoldable1<Result = A>,
+    G:MultiFoldable1<Result = A>,
+    H:MultiFoldable1<Result = A>,
+
+{
+    type Result = A;
+    fn multi_fold_2(self) -> A {
+        match self {
+            Either7::_1(a) => a.multi_fold_1(),
+            Either7::_2(a) => a.multi_fold_1(),
+            Either7::_3(a) => a.multi_fold_1(),
+            Either7::_4(a) => a.multi_fold_1(),
+            Either7::_5(a) => a.multi_fold_1(),
+            Either7::_6(a) => a.multi_fold_1(),
+            Either7::_7(a) => a.multi_fold_1(),
+        }
+    }
+}
+
+impl<A,B,C,D,E,F,G, H> MultiFoldable3 for Either7<B,C,D,E,F,G, H>
+where
+    B:MultiFoldable2<Result = A>,
+    C:MultiFoldable2<Result = A>,
+    D:MultiFoldable2<Result = A>,
+    E:MultiFoldable2<Result = A>,
+    F:MultiFoldable2<Result = A>,
+    G:MultiFoldable2<Result = A>,
+    H:MultiFoldable2<Result = A>,
+
+{
+    type Result = A;
+    fn multi_fold_3(self) -> A {
+        match self {
+            Either7::_1(a) => a.multi_fold_2(),
+            Either7::_2(a) => a.multi_fold_2(),
+            Either7::_3(a) => a.multi_fold_2(),
+            Either7::_4(a) => a.multi_fold_2(),
+            Either7::_5(a) => a.multi_fold_2(),
+            Either7::_6(a) => a.multi_fold_2(),
+            Either7::_7(a) => a.multi_fold_2(),
+        }
+    }
+}
+
+impl<A,B,C,D,E,F,G, H> MultiFoldable4 for Either7<B,C,D,E,F,G, H>
+where
+    B:MultiFoldable3<Result = A>,
+    C:MultiFoldable3<Result = A>,
+    D:MultiFoldable3<Result = A>,
+    E:MultiFoldable3<Result = A>,
+    F:MultiFoldable3<Result = A>,
+    G:MultiFoldable3<Result = A>,
+    H:MultiFoldable3<Result = A>,
+
+{
+    type Result = A;
+    fn multi_fold_4(self) -> A {
+        match self {
+            Either7::_1(a) => a.multi_fold_3(),
+            Either7::_2(a) => a.multi_fold_3(),
+            Either7::_3(a) => a.multi_fold_3(),
+            Either7::_4(a) => a.multi_fold_3(),
+            Either7::_5(a) => a.multi_fold_3(),
+            Either7::_6(a) => a.multi_fold_3(),
+            Either7::_7(a) => a.multi_fold_3(),
+        }
+    }
+}
+
+impl<A,B,C,D,E,F,G, H> MultiFoldable5 for Either7<B,C,D,E,F,G, H>
+where
+    B:MultiFoldable4<Result = A>,
+    C:MultiFoldable4<Result = A>,
+    D:MultiFoldable4<Result = A>,
+    E:MultiFoldable4<Result = A>,
+    F:MultiFoldable4<Result = A>,
+    G:MultiFoldable4<Result = A>,
+    H:MultiFoldable4<Result = A>,
+
+{
+    type Result = A;
+    fn multi_fold_5(self) -> A {
+        match self {
+            Either7::_1(a) => a.multi_fold_4(),
+            Either7::_2(a) => a.multi_fold_4(),
+            Either7::_3(a) => a.multi_fold_4(),
+            Either7::_4(a) => a.multi_fold_4(),
+            Either7::_5(a) => a.multi_fold_4(),
+            Either7::_6(a) => a.multi_fold_4(),
+            Either7::_7(a) => a.multi_fold_4(),
+        }
+    }
+}
+
+
+
+
+
+
+impl<A,B,C,D,E,F,G, H, J> MultiFoldable1 for Either8<B,C,D,E,F,G, H, J>
+where
+    B:Foldable<Result = A>,
+    C:Foldable<Result = A>,
+    D:Foldable<Result = A>,
+    E:Foldable<Result = A>,
+    F:Foldable<Result = A>,
+    G:Foldable<Result = A>,
+    H:Foldable<Result = A>,
+    J:Foldable<Result = A>,
+
+{
+    type Result = A;
+    fn multi_fold_1(self) -> A {
+        match self {
+            Either8::_1(a) => a.fold(),
+            Either8::_2(a) => a.fold(),
+            Either8::_3(a) => a.fold(),
+            Either8::_4(a) => a.fold(),
+            Either8::_5(a) => a.fold(),
+            Either8::_6(a) => a.fold(),
+            Either8::_7(a) => a.fold(),
+            Either8::_8(a) => a.fold(),
+        }
+    }
+}
+
+impl<A,B,C,D,E,F,G, H, J> MultiFoldable2 for Either8<B,C,D,E,F,G, H, J>
+where
+    B:MultiFoldable1<Result = A>,
+    C:MultiFoldable1<Result = A>,
+    D:MultiFoldable1<Result = A>,
+    E:MultiFoldable1<Result = A>,
+    F:MultiFoldable1<Result = A>,
+    G:MultiFoldable1<Result = A>,
+    H:MultiFoldable1<Result = A>,
+    J:MultiFoldable1<Result = A>,
+
+{
+    type Result = A;
+    fn multi_fold_2(self) -> A {
+        match self {
+            Either8::_1(a) => a.multi_fold_1(),
+            Either8::_2(a) => a.multi_fold_1(),
+            Either8::_3(a) => a.multi_fold_1(),
+            Either8::_4(a) => a.multi_fold_1(),
+            Either8::_5(a) => a.multi_fold_1(),
+            Either8::_6(a) => a.multi_fold_1(),
+            Either8::_7(a) => a.multi_fold_1(),
+            Either8::_8(a) => a.multi_fold_1(),
+        }
+    }
+}
+
+impl<A,B,C,D,E,F,G, H, J> MultiFoldable3 for Either8<B,C,D,E,F,G, H, J>
+where
+    B:MultiFoldable2<Result = A>,
+    C:MultiFoldable2<Result = A>,
+    D:MultiFoldable2<Result = A>,
+    E:MultiFoldable2<Result = A>,
+    F:MultiFoldable2<Result = A>,
+    G:MultiFoldable2<Result = A>,
+    H:MultiFoldable2<Result = A>,
+    J:MultiFoldable2<Result = A>,
+
+{
+    type Result = A;
+    fn multi_fold_3(self) -> A {
+        match self {
+            Either8::_1(a) => a.multi_fold_2(),
+            Either8::_2(a) => a.multi_fold_2(),
+            Either8::_3(a) => a.multi_fold_2(),
+            Either8::_4(a) => a.multi_fold_2(),
+            Either8::_5(a) => a.multi_fold_2(),
+            Either8::_6(a) => a.multi_fold_2(),
+            Either8::_7(a) => a.multi_fold_2(),
+            Either8::_8(a) => a.multi_fold_2(),
+        }
+    }
+}
+
+impl<A,B,C,D,E,F,G, H, J> MultiFoldable4 for Either8<B,C,D,E,F,G, H, J>
+where
+    B:MultiFoldable3<Result = A>,
+    C:MultiFoldable3<Result = A>,
+    D:MultiFoldable3<Result = A>,
+    E:MultiFoldable3<Result = A>,
+    F:MultiFoldable3<Result = A>,
+    G:MultiFoldable3<Result = A>,
+    H:MultiFoldable3<Result = A>,
+    J:MultiFoldable3<Result = A>,
+
+{
+    type Result = A;
+    fn multi_fold_4(self) -> A {
+        match self {
+            Either8::_1(a) => a.multi_fold_3(),
+            Either8::_2(a) => a.multi_fold_3(),
+            Either8::_3(a) => a.multi_fold_3(),
+            Either8::_4(a) => a.multi_fold_3(),
+            Either8::_5(a) => a.multi_fold_3(),
+            Either8::_6(a) => a.multi_fold_3(),
+            Either8::_7(a) => a.multi_fold_3(),
+            Either8::_8(a) => a.multi_fold_3(),
+        }
+    }
+}
+
+impl<A,B,C,D,E,F,G, H, J> MultiFoldable5 for Either8<B,C,D,E,F,G, H, J>
+where
+    B:MultiFoldable4<Result = A>,
+    C:MultiFoldable4<Result = A>,
+    D:MultiFoldable4<Result = A>,
+    E:MultiFoldable4<Result = A>,
+    F:MultiFoldable4<Result = A>,
+    G:MultiFoldable4<Result = A>,
+    H:MultiFoldable4<Result = A>,
+    J:MultiFoldable4<Result = A>,
+
+{
+    type Result = A;
+    fn multi_fold_5(self) -> A {
+        match self {
+            Either8::_1(a) => a.multi_fold_4(),
+            Either8::_2(a) => a.multi_fold_4(),
+            Either8::_3(a) => a.multi_fold_4(),
+            Either8::_4(a) => a.multi_fold_4(),
+            Either8::_5(a) => a.multi_fold_4(),
+            Either8::_6(a) => a.multi_fold_4(),
+            Either8::_7(a) => a.multi_fold_4(),
+            Either8::_8(a) => a.multi_fold_4(),
+        }
+    }
+}
+
+
+
+
+impl<A,B,C,D,E,F,G, H, J, K> MultiFoldable1 for Either9<B,C,D,E,F,G, H, J, K>
+where
+    B:Foldable<Result = A>,
+    C:Foldable<Result = A>,
+    D:Foldable<Result = A>,
+    E:Foldable<Result = A>,
+    F:Foldable<Result = A>,
+    G:Foldable<Result = A>,
+    H:Foldable<Result = A>,
+    J:Foldable<Result = A>,
+    K:Foldable<Result = A>,
+
+{
+    type Result = A;
+    fn multi_fold_1(self) -> A {
+        match self {
+            Either9::_1(a) => a.fold(),
+            Either9::_2(a) => a.fold(),
+            Either9::_3(a) => a.fold(),
+            Either9::_4(a) => a.fold(),
+            Either9::_5(a) => a.fold(),
+            Either9::_6(a) => a.fold(),
+            Either9::_7(a) => a.fold(),
+            Either9::_8(a) => a.fold(),
+            Either9::_9(a) => a.fold(),
+        }
+    }
+}
+
+impl<A,B,C,D,E,F,G, H, J, K> MultiFoldable2 for Either9<B,C,D,E,F,G, H, J, K>
+where
+    B:MultiFoldable1<Result = A>,
+    C:MultiFoldable1<Result = A>,
+    D:MultiFoldable1<Result = A>,
+    E:MultiFoldable1<Result = A>,
+    F:MultiFoldable1<Result = A>,
+    G:MultiFoldable1<Result = A>,
+    H:MultiFoldable1<Result = A>,
+    J:MultiFoldable1<Result = A>,
+    K:MultiFoldable1<Result = A>,
+
+{
+    type Result = A;
+    fn multi_fold_2(self) -> A {
+        match self {
+            Either9::_1(a) => a.multi_fold_1(),
+            Either9::_2(a) => a.multi_fold_1(),
+            Either9::_3(a) => a.multi_fold_1(),
+            Either9::_4(a) => a.multi_fold_1(),
+            Either9::_5(a) => a.multi_fold_1(),
+            Either9::_6(a) => a.multi_fold_1(),
+            Either9::_7(a) => a.multi_fold_1(),
+            Either9::_8(a) => a.multi_fold_1(),
+            Either9::_9(a) => a.multi_fold_1(),
+        }
+    }
+}
+
+impl<A,B,C,D,E,F,G, H, J, K> MultiFoldable3 for Either9<B,C,D,E,F,G, H, J, K>
+where
+    B:MultiFoldable2<Result = A>,
+    C:MultiFoldable2<Result = A>,
+    D:MultiFoldable2<Result = A>,
+    E:MultiFoldable2<Result = A>,
+    F:MultiFoldable2<Result = A>,
+    G:MultiFoldable2<Result = A>,
+    H:MultiFoldable2<Result = A>,
+    J:MultiFoldable2<Result = A>,
+    K:MultiFoldable2<Result = A>,
+
+{
+    type Result = A;
+    fn multi_fold_3(self) -> A {
+        match self {
+            Either9::_1(a) => a.multi_fold_2(),
+            Either9::_2(a) => a.multi_fold_2(),
+            Either9::_3(a) => a.multi_fold_2(),
+            Either9::_4(a) => a.multi_fold_2(),
+            Either9::_5(a) => a.multi_fold_2(),
+            Either9::_6(a) => a.multi_fold_2(),
+            Either9::_7(a) => a.multi_fold_2(),
+            Either9::_8(a) => a.multi_fold_2(),
+            Either9::_9(a) => a.multi_fold_2(),
+        }
+    }
+}
+
+
+impl<A,B,C,D,E,F,G, H, J, K> MultiFoldable4 for Either9<B,C,D,E,F,G, H, J, K>
+where
+    B:MultiFoldable3<Result = A>,
+    C:MultiFoldable3<Result = A>,
+    D:MultiFoldable3<Result = A>,
+    E:MultiFoldable3<Result = A>,
+    F:MultiFoldable3<Result = A>,
+    G:MultiFoldable3<Result = A>,
+    H:MultiFoldable3<Result = A>,
+    J:MultiFoldable3<Result = A>,
+    K:MultiFoldable3<Result = A>,
+
+{
+    type Result = A;
+    fn multi_fold_4(self) -> A {
+        match self {
+            Either9::_1(a) => a.multi_fold_3(),
+            Either9::_2(a) => a.multi_fold_3(),
+            Either9::_3(a) => a.multi_fold_3(),
+            Either9::_4(a) => a.multi_fold_3(),
+            Either9::_5(a) => a.multi_fold_3(),
+            Either9::_6(a) => a.multi_fold_3(),
+            Either9::_7(a) => a.multi_fold_3(),
+            Either9::_8(a) => a.multi_fold_3(),
+            Either9::_9(a) => a.multi_fold_3(),
+        }
+    }
+}
+
+impl<A,B,C,D,E,F,G, H, J, K> MultiFoldable5 for Either9<B,C,D,E,F,G, H, J, K>
+where
+    B:MultiFoldable4<Result = A>,
+    C:MultiFoldable4<Result = A>,
+    D:MultiFoldable4<Result = A>,
+    E:MultiFoldable4<Result = A>,
+    F:MultiFoldable4<Result = A>,
+    G:MultiFoldable4<Result = A>,
+    H:MultiFoldable4<Result = A>,
+    J:MultiFoldable4<Result = A>,
+    K:MultiFoldable4<Result = A>,
+
+{
+    type Result = A;
+    fn multi_fold_5(self) -> A {
+        match self {
+            Either9::_1(a) => a.multi_fold_4(),
+            Either9::_2(a) => a.multi_fold_4(),
+            Either9::_3(a) => a.multi_fold_4(),
+            Either9::_4(a) => a.multi_fold_4(),
+            Either9::_5(a) => a.multi_fold_4(),
+            Either9::_6(a) => a.multi_fold_4(),
+            Either9::_7(a) => a.multi_fold_4(),
+            Either9::_8(a) => a.multi_fold_4(),
+            Either9::_9(a) => a.multi_fold_4(),
+        }
+    }
+}
+
+
+
+impl<A,B,C,D,E,F,G, H, J, K, L> MultiFoldable1 for Either10<B,C,D,E,F,G, H, J, K, L>
+where
+    B:Foldable<Result = A>,
+    C:Foldable<Result = A>,
+    D:Foldable<Result = A>,
+    E:Foldable<Result = A>,
+    F:Foldable<Result = A>,
+    G:Foldable<Result = A>,
+    H:Foldable<Result = A>,
+    J:Foldable<Result = A>,
+    K:Foldable<Result = A>,
+    L:Foldable<Result = A>,
+
+{
+    type Result = A;
+    fn multi_fold_1(self) -> A {
+        match self {
+            Either10::_1(a) => a.fold(),
+            Either10::_2(a) => a.fold(),
+            Either10::_3(a) => a.fold(),
+            Either10::_4(a) => a.fold(),
+            Either10::_5(a) => a.fold(),
+            Either10::_6(a) => a.fold(),
+            Either10::_7(a) => a.fold(),
+            Either10::_8(a) => a.fold(),
+            Either10::_9(a) => a.fold(),
+            Either10::_10(a) => a.fold(),
+        }
+    }
+}
+
+
+impl<A,B,C,D,E,F,G, H, J, K, L> MultiFoldable2 for Either10<B,C,D,E,F,G, H, J, K, L>
+where
+    B:MultiFoldable1<Result = A>,
+    C:MultiFoldable1<Result = A>,
+    D:MultiFoldable1<Result = A>,
+    E:MultiFoldable1<Result = A>,
+    F:MultiFoldable1<Result = A>,
+    G:MultiFoldable1<Result = A>,
+    H:MultiFoldable1<Result = A>,
+    J:MultiFoldable1<Result = A>,
+    K:MultiFoldable1<Result = A>,
+    L:MultiFoldable1<Result = A>,
+
+{
+    type Result = A;
+    fn multi_fold_2(self) -> A {
+        match self {
+            Either10::_1(a) => a.multi_fold_1(),
+            Either10::_2(a) => a.multi_fold_1(),
+            Either10::_3(a) => a.multi_fold_1(),
+            Either10::_4(a) => a.multi_fold_1(),
+            Either10::_5(a) => a.multi_fold_1(),
+            Either10::_6(a) => a.multi_fold_1(),
+            Either10::_7(a) => a.multi_fold_1(),
+            Either10::_8(a) => a.multi_fold_1(),
+            Either10::_9(a) => a.multi_fold_1(),
+            Either10::_10(a) => a.multi_fold_1(),
+        }
+    }
+}
+
+
+impl<A,B,C,D,E,F,G, H, J, K, L> MultiFoldable3 for Either10<B,C,D,E,F,G, H, J, K, L>
+where
+    B:MultiFoldable2<Result = A>,
+    C:MultiFoldable2<Result = A>,
+    D:MultiFoldable2<Result = A>,
+    E:MultiFoldable2<Result = A>,
+    F:MultiFoldable2<Result = A>,
+    G:MultiFoldable2<Result = A>,
+    H:MultiFoldable2<Result = A>,
+    J:MultiFoldable2<Result = A>,
+    K:MultiFoldable2<Result = A>,
+    L:MultiFoldable2<Result = A>,
+
+{
+    type Result = A;
+    fn multi_fold_3(self) -> A {
+        match self {
+            Either10::_1(a) => a.multi_fold_2(),
+            Either10::_2(a) => a.multi_fold_2(),
+            Either10::_3(a) => a.multi_fold_2(),
+            Either10::_4(a) => a.multi_fold_2(),
+            Either10::_5(a) => a.multi_fold_2(),
+            Either10::_6(a) => a.multi_fold_2(),
+            Either10::_7(a) => a.multi_fold_2(),
+            Either10::_8(a) => a.multi_fold_2(),
+            Either10::_9(a) => a.multi_fold_2(),
+            Either10::_10(a) => a.multi_fold_2(),
+        }
+    }
+}
+
+impl<A,B,C,D,E,F,G, H, J, K, L> MultiFoldable4 for Either10<B,C,D,E,F,G, H, J, K, L>
+where
+    B:MultiFoldable3<Result = A>,
+    C:MultiFoldable3<Result = A>,
+    D:MultiFoldable3<Result = A>,
+    E:MultiFoldable3<Result = A>,
+    F:MultiFoldable3<Result = A>,
+    G:MultiFoldable3<Result = A>,
+    H:MultiFoldable3<Result = A>,
+    J:MultiFoldable3<Result = A>,
+    K:MultiFoldable3<Result = A>,
+    L:MultiFoldable3<Result = A>,
+
+{
+    type Result = A;
+    fn multi_fold_4(self) -> A {
+        match self {
+            Either10::_1(a) => a.multi_fold_3(),
+            Either10::_2(a) => a.multi_fold_3(),
+            Either10::_3(a) => a.multi_fold_3(),
+            Either10::_4(a) => a.multi_fold_3(),
+            Either10::_5(a) => a.multi_fold_3(),
+            Either10::_6(a) => a.multi_fold_3(),
+            Either10::_7(a) => a.multi_fold_3(),
+            Either10::_8(a) => a.multi_fold_3(),
+            Either10::_9(a) => a.multi_fold_3(),
+            Either10::_10(a) => a.multi_fold_3(),
+        }
+    }
+}
+
+
+impl<A,B,C,D,E,F,G, H, J, K, L> MultiFoldable5 for Either10<B,C,D,E,F,G, H, J, K, L>
+where
+    B:MultiFoldable4<Result = A>,
+    C:MultiFoldable4<Result = A>,
+    D:MultiFoldable4<Result = A>,
+    E:MultiFoldable4<Result = A>,
+    F:MultiFoldable4<Result = A>,
+    G:MultiFoldable4<Result = A>,
+    H:MultiFoldable4<Result = A>,
+    J:MultiFoldable4<Result = A>,
+    K:MultiFoldable4<Result = A>,
+    L:MultiFoldable4<Result = A>,
+
+{
+    type Result = A;
+    fn multi_fold_5(self) -> A {
+        match self {
+            Either10::_1(a) => a.multi_fold_4(),
+            Either10::_2(a) => a.multi_fold_4(),
+            Either10::_3(a) => a.multi_fold_4(),
+            Either10::_4(a) => a.multi_fold_4(),
+            Either10::_5(a) => a.multi_fold_4(),
+            Either10::_6(a) => a.multi_fold_4(),
+            Either10::_7(a) => a.multi_fold_4(),
+            Either10::_8(a) => a.multi_fold_4(),
+            Either10::_9(a) => a.multi_fold_4(),
+            Either10::_10(a) => a.multi_fold_4(),
+        }
+    }
+}
+
+
+
+
+
+
+/*
 /// Trait for deep folding of nested Either types.
 ///
 /// This trait allows for recursively collapsing nested Either types to a common result type.
@@ -1520,7 +2693,7 @@ where
 
 
 //TODO find a way to generalize DeepFoldable 
-
+*/
 /// Marker trait for sum and product types.
 pub trait SumAndProdType {}
 
