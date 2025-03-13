@@ -163,8 +163,43 @@ pub mod core;
 pub mod parsers;
 pub mod sugar;
 pub mod types;
+
+//TODO reconsider
 pub mod state;
 pub mod memo;
-// Include examples in tests
+pub mod lexer;
+
+//TODO implement
+pub mod pratt; /* Pratt parser with pre/in/pos/mix-fix precedence*/
+pub mod grammar; /* Grammar builder: api
+
+let mut builder = GrammarBuilder::new();
+let ident = builder.production("identifier"); let expr = builder.production("expr");
+ *expr =  ident + "(" expr &  expr  ")" + "lambda"  &  ident & "->" & expr *
+& for seq
++ for alt
+| for or
+[..] for many
+[..N] at most<N>
+[N..] at least<N>
+[N..M] between<N>
+[Parser] seperated_by
+!P fot not
+P >> R for chainr1
+P << R for chainl1
+P % func for map_err
+P / func for map
+usual .methods */
+
+
+//TODO
+// macrofy repeated impls
+// create non const versions of AtLeastNParser etc.
+// If no error then return () as err and implement decrement for Eithers
+// DeepFoldable should be implemented
+// map_1 .. etc should be implemented for tuples as well
+// remove seperate traits like SeqParser, AltParser
+// move stuff to extension traits
+
 #[cfg(test)]
 pub mod tests;
