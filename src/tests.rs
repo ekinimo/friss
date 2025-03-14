@@ -455,7 +455,7 @@ fn test_validate() {
 #[test]
 fn test_bind() {
     let num = "123".make_literal_matcher("Not number");
-    let parser = num.bind(|n| {
+    let parser = num.bind_output(|n| {
         n[0..2]
             .make_literal_matcher("Wrong length")
             .map(|len| len.to_string())

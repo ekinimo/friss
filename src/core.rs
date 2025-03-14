@@ -28,7 +28,7 @@
 //! assert_eq!(combined.parse("123"), Ok(("3", "12".to_string())));
 //! ```
 use std::cell::RefCell;
-use crate::types::*;
+use crate::{state::{StateCarrier, StatefulParser, TransitionParser}, types::*};
 
 /// Trait for items within a `Parsable` type.
 ///
@@ -131,6 +131,45 @@ pub trait Parser<Input: Parsable<Error>, Output: ParserOutput, Error: Clone> {
     /// ```
     fn parse(&self, input: Input) -> Result<(Input, Output), (Input, Error)>;
 
+
+
+    fn with_state_transition<State,SuccessF,FailF>(self,succes:SuccessF,fail:FailF)-> impl StatefulParser<State,Input,Output,Error>
+        where
+        Input : Clone,
+        Self : Sized,
+    for<'a> SuccessF: FnMut(State, Input, Output, Input) -> (State, Input, Output) + 'a,
+    for<'a> FailF: FnMut(State, Input, Error, Input) -> (State, Input, Error) + 'a,
+    StateCarrier<State, Input>: Parsable<Error>,
+    {
+
+        TransitionParser::new_with_success_and_fail(self,succes,fail)
+     
+    }
+
+
+    fn transition_on_success<State,SuccessF,FailF>(self,success:SuccessF)-> impl StatefulParser<State,Input,Output,Error>
+    where
+        Input : Clone,
+    Self : Sized,
+    for<'a> SuccessF: FnMut(State, Input, Output, Input) -> (State, Input, Output) + 'a,
+    StateCarrier<State, Input>: Parsable<Error>,
+    {
+
+        TransitionParser::new_with_success_and_fail(self,success,|state,rest,error,_orig| (state,rest,error))
+    }
+
+    fn transition_on_error<State,SuccessF,FailF>(self,fail:FailF)-> impl StatefulParser<State,Input,Output,Error>
+    where
+        Input : Clone,
+    Self : Sized,
+    for<'a> FailF: FnMut(State, Input, Error, Input) -> (State, Input, Error) + 'a,
+    StateCarrier<State, Input>: Parsable<Error>,
+    {
+
+        TransitionParser::new_with_success_and_fail(self,|state,rest,error,_orig| (state,rest,error),fail)
+    }
+
+
     /// Validates the output of the parser with a predicate.
     ///
     /// Returns an error if the predicate returns false.
@@ -224,7 +263,7 @@ pub trait Parser<Input: Parsable<Error>, Output: ParserOutput, Error: Clone> {
     ///     .validate(|c| c.is_digit(10), "Not a digit");
     ///
     /// // Parse a digit, then parse that many 'a' characters
-    /// let count_parser = digit.bind(|c| {
+    /// let count_parser = digit.bind_output(|c| {
     ///     let count = c.to_digit(10).unwrap() as usize;
     ///     "a".make_literal_matcher("Expected 'a'")
     ///         .exactly_n::<3>("Need exactly 3 'a's")
@@ -232,12 +271,12 @@ pub trait Parser<Input: Parsable<Error>, Output: ParserOutput, Error: Clone> {
     ///
     /// // assert_eq!(count_parser.parse("3aaa"), Ok(("", Box::new(["a", "a", "a"]))));
     /// ```
-    fn bind<Out2, Fun, Ret: Parser<Input, Out2, Error>>(
+    fn bind_output<Out2, BindFun, Ret: Parser<Input, Out2, Error>>(
         self,
-        f: Fun,
+        f: BindFun,
     ) -> impl Parser<Input, Out2, Error>
     where
-        Fun: Fn(Output) -> Ret,
+        BindFun: Fn(Output) -> Ret,
         Self: Sized,
     {
         move |input: Input| {
@@ -245,6 +284,72 @@ pub trait Parser<Input: Parsable<Error>, Output: ParserOutput, Error: Clone> {
             f(ret).parse(rest)
         }
     }
+
+
+    fn bind_output_mapping_error<Out2,Err2, BindFun,ErrMapper, Ret: Parser<Input, Out2, Err2>>(
+        self,
+        bind_fun: BindFun,
+        err_map: ErrMapper,
+
+    ) -> impl Parser<Input, Out2, Err2>
+    where
+        BindFun: Fn(Output) -> Ret,
+        ErrMapper: Fn(Error) -> Err2,
+        Self: Sized,
+    Err2 : Clone,
+    Input : Parsable<Err2>
+    {
+        move |input: Input| {
+            match self.parse(input) {
+                Ok((rest,out)) => bind_fun(out).parse(rest),
+                Err((rest,err)) => Err((rest,err_map(err))),
+            }
+        }
+    }
+
+    //TODO document
+    fn bind_err<Out2,Err2, BindFun,ErrFun, Ret: Parser<Input, Out2, Err2>>(
+        self,
+        f: BindFun,
+        err:Err2
+    ) -> impl Parser<Input, Out2, Err2>
+    where
+        BindFun: Fn(Error) -> Ret,
+        Self: Sized,
+    Err2 : Clone,
+    Input : Parsable<Err2>
+    {
+        move |input: Input| {
+            match self.parse(input) {
+                Ok((rest,_out)) => Err((rest,err.clone())),
+                Err((rest,err)) => f(err).parse(rest),
+            }
+
+        }
+    }
+
+    //TODO document also this is not general enough (stateful parsers should be able to bind with their state as well ie not enough args) 
+    fn bind<Out2,Err2, OutBind,ErrBind, Ret: Parser<Input, Out2, Err2>>(
+        self,
+        out_bind: OutBind,
+        err_bind: ErrBind,
+    ) -> impl Parser<Input, Out2, Err2>
+    where
+        OutBind: Fn(Output) -> Ret,
+        ErrBind: Fn(Error) -> Ret,
+        Self: Sized,
+        Err2 : Clone,
+        Input : Parsable<Err2>
+    {
+        move |input: Input| {
+            match self.parse(input) {
+                Ok((rest,out)) => out_bind(out).parse(rest),
+                Err((rest,err)) => err_bind(err).parse(rest),
+            }
+        }
+    }
+
+
 
     /// Sequences this parser with another parser.
     ///
@@ -374,22 +479,26 @@ pub trait Parser<Input: Parsable<Error>, Output: ParserOutput, Error: Clone> {
     fn many(self) -> impl ManyParser<Input, Output, Error>
     where
         Self: Sized,
-        Input: PartialEq + Clone,
+        Input: PartialEq,
     {
         move |input: Input| {
             let mut result = Vec::new();
             let mut rest = input;
 
             loop {
-                match self.parse(rest.clone()) {
+                //let rest_ref = &rest;
+                match self.parse(rest) {
                     Ok((new_rest, ret)) => {
-                        if new_rest == rest {
+                        /*
+                        //we probably dont need this
+                        if &new_rest == rest_ref {
                             break;
-                        }
+                        }*/
                         rest = new_rest;
                         result.push(ret);
                     }
-                    Err(_) => {
+                    Err((new_rest, _err)) => {
+                        rest = new_rest;
                         break;
                     }
                 }
@@ -415,25 +524,25 @@ pub trait Parser<Input: Parsable<Error>, Output: ParserOutput, Error: Clone> {
     fn at_least_n(self, n: usize, err: Error) -> impl AtLeastNParser<Input, Output, Error>
     where
         Self: Sized,
-        Input: PartialEq + Clone,
+        Input: PartialEq ,
         Error: Clone,
     {
         move |input: Input| {
             let mut result = Vec::new();
-            let mut rest = input.clone();
+            let mut rest = input;
             let mut remaining = n;
 
             while remaining > 0 {
-                match self.parse(rest.clone()) {
+                match self.parse(rest) {
                     Ok((new_rest, ret)) => {
-                        if new_rest == rest {
+                        /*if new_rest == rest {
                             break;
-                        }
+                        }*/
                         rest = new_rest;
                         result.push(ret);
                         remaining -= 1;
                     }
-                    Err((_, _)) => {
+                    Err((rest, _)) => {
                         return Err((rest, err.clone()));
                     }
                 }
@@ -461,28 +570,28 @@ pub trait Parser<Input: Parsable<Error>, Output: ParserOutput, Error: Clone> {
     where
         Self: Sized,
         Error: Clone,
-        Input: Clone + PartialEq,
-        Output: Copy + Clone,
+        Input: PartialEq,
+        Output: Copy,
     {
         move |input: Input| {
             let mut result = [None; N];
-            let mut rest = input.clone();
+            let mut rest = input;
             let mut remaining = N;
 
             while remaining > 0 {
-                match self.parse(rest.clone()) {
+                match self.parse(rest) {
                     Ok((new_rest, ret)) => {
-                        if new_rest == rest {
+                        /*if new_rest == rest {
                             break;
-                        }
+                        }*/
                         rest = new_rest;
                         result[N - remaining] = Some(ret);
                         remaining -= 1;
                     }
-                    Err((_, _)) => break,
+                    Err((new_rest, _)) => { rest = new_rest;  break},
                 }
             }
-            Ok((rest, Box::new(result.to_owned())))
+            Ok((rest, Box::new(result)))
         }
     }
 
@@ -504,37 +613,40 @@ pub trait Parser<Input: Parsable<Error>, Output: ParserOutput, Error: Clone> {
     where
         Self: Sized,
         Error: Clone,
-        Input: Clone + PartialEq,
-        Output: Clone,
+        Input:  PartialEq,
+        Output: Copy,
     {
         move |input: Input| {
             let mut result = Vec::with_capacity(N);
-            let mut rest = input.clone();
+            let mut rest = input;
             let mut remaining = N;
-
+            let mut maybe_err = None;
             while remaining > 0 {
-                match self.parse(rest.clone()) {
+                match self.parse(rest) {
                     Ok((new_rest, ret)) => {
-                        if new_rest == rest {
+                        /*if new_rest == rest {
                             break;
-                        }
+                        }*/
                         rest = new_rest;
                         result.push(ret);
                         remaining -= 1;
                     }
-                    Err((_, _)) => break,
+                    Err((new_rest, err)) => { rest = new_rest; maybe_err = Some(err);  break;},
                 }
             }
 
+            if let Some(err) = maybe_err{
+                return Err((rest, err.clone()))
+            }
             if result.len() == N {
                 result.shrink_to_fit();
                 if let Some((r, _)) = result.split_first_chunk_mut::<N>() {
                     Ok((rest, Box::new(r.to_owned())))
                 } else {
-                    Err((input.clone(), err.clone()))
+                    Err((rest, err.clone()))
                 }
             } else {
-                Err((input, err.clone()))
+                Err((rest, err.clone()))
             }
         }
     }
