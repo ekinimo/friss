@@ -1090,3 +1090,30 @@ mod expr_parser {
     }
 }
 
+
+
+
+
+
+mod scratch {
+    use lexer::LexerExt;
+
+    use super::super::*;
+
+    #[test]
+    fn scratch() {
+
+        //<exp>::=||<var> | fn <var> => <exp> | ( <exp> <exp> )
+        let let_p = "let".make_literal_matcher("Let").lexeme();
+
+
+        let prog = "let x = 3 in x+1;";
+        let result = let_p.parse(prog);
+
+
+        assert_eq!(dbg!(result), Ok(("x = 3 in x+1;","let")));
+
+        assert_eq!(false,true);
+    }
+
+}

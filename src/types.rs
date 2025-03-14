@@ -15,50 +15,6 @@ pub enum Either<A, B> {
     Right(B),
 }
 
-impl<A, B> Either<A, B> {
-    /// Swaps the left and right variants.
-    pub fn swap(self) -> Either<B, A> {
-        match self {
-            Either::Left(x) => Either::Right(x),
-            Either::Right(x) => Either::Left(x),
-        }
-    }
-
-    /// Maps both variants with separate functions.
-    pub fn map<C1, C2, F1, F2>(self, mut f: F1, mut g: F2) -> Either<C1, C2>
-    where
-        F1: FnMut(A) -> C1,
-        F2: FnMut(B) -> C2,
-    {
-        match self {
-            Either::Right(a) => Either::Right(g(a)),
-            Either::Left(a) => Either::Left(f(a)),
-        }
-    }
-
-    /// Maps only the right variant, leaving the left variant unchanged.
-    pub fn map_right<C, F>(self, mut f: F) -> Either<A, C>
-    where
-        F: FnMut(B) -> C,
-    {
-        
-        match self {
-            Either::Right(a) => Either::Right(f(a)),
-            Either::Left(x) => Either::Left(x),
-        }
-    }
-
-    /// Maps only the left variant, leaving the right variant unchanged.
-    pub fn map_left<C, F>(self, mut f: F) -> Either<C, B>
-    where
-        F: FnMut(A) -> C,
-    {
-        match self {
-            Either::Left(a) => Either::Left(f(a)),
-            Either::Right(x) => Either::Right(x),
-        }
-    }
-}
 
 
 // Macro to define Either types
@@ -104,6 +60,11 @@ macro_rules! impl_either_map {
     };
 }
 
+
+
+
+
+
 impl_either_map!(Either, Left => A => B => f, Right => C => D => g);
 impl_either_map!(Either3, Left => A => B => f, Middle => C => D => g, Right => E => F => h);
 impl_either_map!(Either4, _1 => A1 => B1 => f1, _2 => A2 => B2 => f2, _3 => A3 => B3 => f3, _4 => A4 => B4 => f4);
@@ -114,1147 +75,99 @@ impl_either_map!(Either8, _1 => A1 => B1 => f1, _2 => A2 => B2 => f2, _3 => A3 =
 impl_either_map!(Either9, _1 => A1 => B1 => f1, _2 => A2 => B2 => f2, _3 => A3 => B3 => f3, _4 => A4 => B4 => f4, _5 => A5 => B5 => f5, _6 => A6 => B6 => f6, _7 => A7 => B7 => f7, _8 => A8 => B8 => f8, _9 => A9 => B9 => f9);
 impl_either_map!(Either10, _1 => A1 => B1 => f1, _2 => A2 => B2 => f2, _3 => A3 => B3 => f3, _4 => A4 => B4 => f4, _5 => A5 => B5 => f5, _6 => A6 => B6 => f6, _7 => A7 => B7 => f7, _8 => A8 => B8 => f8, _9 => A9 => B9 => f9, _10 => A10 => B10 => f10);
 
-impl<A1, A2, A3> Either3<A1, A2, A3> {
-    /// Maps all variants with separate functions.
-    pub fn map<B1, B2, B3, F1, F2, F3>(self, mut f1: F1, mut f2: F2, mut f3: F3) -> Either3<B1, B2, B3>
-    where
-        F1: FnMut(A1) -> B1,
-        F2: FnMut(A2) -> B2,
-        F3: FnMut(A3) -> B3,
-    {
 
-        
-        match self {
-            Either3::Left(a) => Either3::Left(f1(a)),
-            Either3::Middle(a) => Either3::Middle(f2(a)),
-            Either3::Right(a) => Either3::Right(f3(a)),
-        }
-    }
 
-    /// Maps only the left variant, leaving others unchanged.
-    pub fn map_left<B, F>(self, mut f: F) -> Either3<B, A2, A3>
-    where
-        F: FnMut(A1) -> B,
-    {
-        match self {
-            Either3::Left(a) => Either3::Left(f(a)),
-            Either3::Middle(a) => Either3::Middle(a),
-            Either3::Right(a) => Either3::Right(a),
-        }
-    }
 
-    /// Maps only the middle variant, leaving others unchanged.
-    pub fn map_middle<B, F>(self, mut f: F) -> Either3<A1, B, A3>
-    where
-        F: FnMut(A2) -> B,
-    {
-        match self {
-            Either3::Left(a) => Either3::Left(a),
-            Either3::Middle(a) => Either3::Middle(f(a)),
-            Either3::Right(a) => Either3::Right(a),
+macro_rules! impl_map_n {
+    ($fun:ident for $type:ident => [ $($pre:ident = $pre_var:ident),* ] : $A:ident = $Var:ident : [ $($post:ident = $post_var:ident),* ] ) => {
+        impl<$($pre,)* $A, $($post),*> $type<$($pre,)* $A, $($post),*> {
+            pub fn $fun<B, F>(self, mut f: F) -> $type<$($pre,)* B, $($post),*>
+            where
+                F: FnMut($A) -> B,
+            {
+                match self {
+                    $($type::$pre_var(a) => $type::$pre_var(a),)*
+                        $type::$Var(a) => $type::$Var(f(a)),
+                    $($type::$post_var(a) => $type::$post_var(a),)*
+                }
+            }
         }
-    }
-
-    /// Maps only the right variant, leaving others unchanged.
-    pub fn map_right<B, F>(self, mut f: F) -> Either3<A1, A2, B>
-    where
-        F: FnMut(A3) -> B,
-    {
-        match self {
-            Either3::Left(a) => Either3::Left(a),
-            Either3::Middle(a) => Either3::Middle(a),
-            Either3::Right(a) => Either3::Right(f(a)),
-        }
-    }
-}
-
-impl<A1, A2, A3, A4> Either4<A1, A2, A3, A4> {
-    /// Maps all variants with separate functions.
-    pub fn map<B1, B2, B3, B4, F1, F2, F3, F4>(
-        self,
-        mut f1: F1,
-        mut f2: F2,
-        mut f3: F3,
-        mut f4: F4,
-    ) -> Either4<B1, B2, B3, B4>
-    where
-        F1: FnMut(A1) -> B1,
-        F2: FnMut(A2) -> B2,
-        F3: FnMut(A3) -> B3,
-        F4: FnMut(A4) -> B4,
-    {
-        match self {
-            Either4::_1(a) => Either4::_1(f1(a)),
-            Either4::_2(a) => Either4::_2(f2(a)),
-            Either4::_3(a) => Either4::_3(f3(a)),
-            Either4::_4(a) => Either4::_4(f4(a)),
-        }
-    }
-
-    /// Maps only the first variant, leaving others unchanged.
-    pub fn map_1<B, F>(self, mut f: F) -> Either4<B, A2, A3, A4>
-    where
-        F: FnMut(A1) -> B,
-    {
-        match self {
-            Either4::_1(a) => Either4::_1(f(a)),
-            Either4::_2(a) => Either4::_2(a),
-            Either4::_3(a) => Either4::_3(a),
-            Either4::_4(a) => Either4::_4(a),
-        }
-    }
-
-    /// Maps only the second variant, leaving others unchanged.
-    pub fn map_2<B, F>(self, mut f: F) -> Either4<A1, B, A3, A4>
-    where
-        F: FnMut(A2) -> B,
-    {
-        match self {
-            Either4::_1(a) => Either4::_1(a),
-            Either4::_2(a) => Either4::_2(f(a)),
-            Either4::_3(a) => Either4::_3(a),
-            Either4::_4(a) => Either4::_4(a),
-        }
-    }
-
-    /// Maps only the third variant, leaving others unchanged.
-    pub fn map_3<B, F>(self, mut f: F) -> Either4<A1, A2, B, A4>
-    where
-        F: FnMut(A3) -> B,
-    {
-        match self {
-            Either4::_1(a) => Either4::_1(a),
-            Either4::_2(a) => Either4::_2(a),
-            Either4::_3(a) => Either4::_3(f(a)),
-            Either4::_4(a) => Either4::_4(a),
-        }
-    }
-
-    /// Maps only the fourth variant, leaving others unchanged.
-    pub fn map_4<B, F>(self, mut f: F) -> Either4<A1, A2, A3, B>
-    where
-        F: FnMut(A4) -> B,
-    {
-        match self {
-            Either4::_1(a) => Either4::_1(a),
-            Either4::_2(a) => Either4::_2(a),
-            Either4::_3(a) => Either4::_3(a),
-            Either4::_4(a) => Either4::_4(f(a)),
-        }
-    }
-}
-
-impl<A1, A2, A3, A4, A5> Either5<A1, A2, A3, A4, A5> {
-    /// Maps all variants with separate functions.
-    pub fn map<B1, B2, B3, B4, B5, F1, F2, F3, F4, F5>(
-        self,
-        mut f1: F1,
-        mut f2: F2,
-        mut f3: F3,
-        mut f4: F4,
-        mut f5: F5,
-    ) -> Either5<B1, B2, B3, B4, B5>
-    where
-        F1: FnMut(A1) -> B1,
-        F2: FnMut(A2) -> B2,
-        F3: FnMut(A3) -> B3,
-        F4: FnMut(A4) -> B4,
-        F5: FnMut(A5) -> B5,
-    {
-        match self {
-            Either5::_1(a) => Either5::_1(f1(a)),
-            Either5::_2(a) => Either5::_2(f2(a)),
-            Either5::_3(a) => Either5::_3(f3(a)),
-            Either5::_4(a) => Either5::_4(f4(a)),
-            Either5::_5(a) => Either5::_5(f5(a)),
-        }
-    }
-
-    /// Maps only the specified variant, leaving others unchanged.
-    pub fn map_1<B, F>(self, mut f: F) -> Either5<B, A2, A3, A4, A5>
-    where
-        F: FnMut(A1) -> B,
-    {
-        match self {
-            Either5::_1(a) => Either5::_1(f(a)),
-            Either5::_2(a) => Either5::_2(a),
-            Either5::_3(a) => Either5::_3(a),
-            Either5::_4(a) => Either5::_4(a),
-            Either5::_5(a) => Either5::_5(a),
-        }
-    }
-
-    pub fn map_2<B, F>(self, mut f: F) -> Either5<A1, B, A3, A4, A5>
-    where
-        F: FnMut(A2) -> B,
-    {
-        match self {
-            Either5::_1(a) => Either5::_1(a),
-            Either5::_2(a) => Either5::_2(f(a)),
-            Either5::_3(a) => Either5::_3(a),
-            Either5::_4(a) => Either5::_4(a),
-            Either5::_5(a) => Either5::_5(a),
-        }
-    }
-
-    pub fn map_3<B, F>(self, mut f: F) -> Either5<A1, A2, B, A4, A5>
-    where
-        F: FnMut(A3) -> B,
-    {
-        match self {
-            Either5::_1(a) => Either5::_1(a),
-            Either5::_2(a) => Either5::_2(a),
-            Either5::_3(a) => Either5::_3(f(a)),
-            Either5::_4(a) => Either5::_4(a),
-            Either5::_5(a) => Either5::_5(a),
-        }
-    }
-
-    pub fn map_4<B, F>(self, mut f: F) -> Either5<A1, A2, A3, B, A5>
-    where
-        F: FnMut(A4) -> B,
-    {
-        match self {
-            Either5::_1(a) => Either5::_1(a),
-            Either5::_2(a) => Either5::_2(a),
-            Either5::_3(a) => Either5::_3(a),
-            Either5::_4(a) => Either5::_4(f(a)),
-            Either5::_5(a) => Either5::_5(a),
-        }
-    }
-
-    pub fn map_5<B, F>(self, mut f: F) -> Either5<A1, A2, A3, A4, B>
-    where
-        F: FnMut(A5) -> B,
-    {
-        match self {
-            Either5::_1(a) => Either5::_1(a),
-            Either5::_2(a) => Either5::_2(a),
-            Either5::_3(a) => Either5::_3(a),
-            Either5::_4(a) => Either5::_4(a),
-            Either5::_5(a) => Either5::_5(f(a)),
-        }
-    }
-}
-
-impl<A1, A2, A3, A4, A5, A6> Either6<A1, A2, A3, A4, A5, A6> {
-    /// Maps all variants with separate functions.
-    pub fn map<B1, B2, B3, B4, B5, B6, F1, F2, F3, F4, F5, F6>(
-        self,
-        mut f1: F1,
-        mut f2: F2,
-        mut f3: F3,
-        mut f4: F4,
-        mut f5: F5,
-        mut f6: F6,
-    ) -> Either6<B1, B2, B3, B4, B5, B6>
-    where
-        F1: FnMut(A1) -> B1,
-        F2: FnMut(A2) -> B2,
-        F3: FnMut(A3) -> B3,
-        F4: FnMut(A4) -> B4,
-        F5: FnMut(A5) -> B5,
-        F6: FnMut(A6) -> B6,
-    {
-        match self {
-            Either6::_1(a) => Either6::_1(f1(a)),
-            Either6::_2(a) => Either6::_2(f2(a)),
-            Either6::_3(a) => Either6::_3(f3(a)),
-            Either6::_4(a) => Either6::_4(f4(a)),
-            Either6::_5(a) => Either6::_5(f5(a)),
-            Either6::_6(a) => Either6::_6(f6(a)),
-        }
-    }
-
-    /// Maps only the first variant, leaving others unchanged.
-    pub fn map_1<B, F>(self, mut f: F) -> Either6<B, A2, A3, A4, A5, A6>
-    where
-        F: FnMut(A1) -> B,
-    {
-        match self {
-            Either6::_1(a) => Either6::_1(f(a)),
-            Either6::_2(a) => Either6::_2(a),
-            Either6::_3(a) => Either6::_3(a),
-            Either6::_4(a) => Either6::_4(a),
-            Either6::_5(a) => Either6::_5(a),
-            Either6::_6(a) => Either6::_6(a),
-        }
-    }
-
-    pub fn map_2<B, F>(self, mut f: F) -> Either6<A1, B, A3, A4, A5, A6>
-    where
-        F: FnMut(A2) -> B,
-    {
-        match self {
-            Either6::_1(a) => Either6::_1(a),
-            Either6::_2(a) => Either6::_2(f(a)),
-            Either6::_3(a) => Either6::_3(a),
-            Either6::_4(a) => Either6::_4(a),
-            Either6::_5(a) => Either6::_5(a),
-            Either6::_6(a) => Either6::_6(a),
-        }
-    }
-
-    pub fn map_3<B, F>(self, mut f: F) -> Either6<A1, A2, B, A4, A5, A6>
-    where
-        F: FnMut(A3) -> B,
-    {
-        match self {
-            Either6::_1(a) => Either6::_1(a),
-            Either6::_2(a) => Either6::_2(a),
-            Either6::_3(a) => Either6::_3(f(a)),
-            Either6::_4(a) => Either6::_4(a),
-            Either6::_5(a) => Either6::_5(a),
-            Either6::_6(a) => Either6::_6(a),
-        }
-    }
-
-    pub fn map_4<B, F>(self, mut f: F) -> Either6<A1, A2, A3, B, A5, A6>
-    where
-        F: FnMut(A4) -> B,
-    {
-        match self {
-            Either6::_1(a) => Either6::_1(a),
-            Either6::_2(a) => Either6::_2(a),
-            Either6::_3(a) => Either6::_3(a),
-            Either6::_4(a) => Either6::_4(f(a)),
-            Either6::_5(a) => Either6::_5(a),
-            Either6::_6(a) => Either6::_6(a),
-        }
-    }
-
-    pub fn map_5<B, F>(self, mut f: F) -> Either6<A1, A2, A3, A4, B, A6>
-    where
-        F: FnMut(A5) -> B,
-    {
-        match self {
-            Either6::_1(a) => Either6::_1(a),
-            Either6::_2(a) => Either6::_2(a),
-            Either6::_3(a) => Either6::_3(a),
-            Either6::_4(a) => Either6::_4(a),
-            Either6::_5(a) => Either6::_5(f(a)),
-            Either6::_6(a) => Either6::_6(a),
-        }
-    }
-
-    pub fn map_6<B, F>(self, mut f: F) -> Either6<A1, A2, A3, A4, A5, B>
-    where
-        F: FnMut(A6) -> B,
-    {
-        match self {
-            Either6::_1(a) => Either6::_1(a),
-            Either6::_2(a) => Either6::_2(a),
-            Either6::_3(a) => Either6::_3(a),
-            Either6::_4(a) => Either6::_4(a),
-            Either6::_5(a) => Either6::_5(a),
-            Either6::_6(a) => Either6::_6(f(a)),
-        }
-    }
-}
-
-// Implementation for Either7
-impl<A1, A2, A3, A4, A5, A6, A7> Either7<A1, A2, A3, A4, A5, A6, A7> {
-    /// Maps all variants with separate functions.
-    pub fn map<B1, B2, B3, B4, B5, B6, B7, F1, F2, F3, F4, F5, F6, F7>(
-        self,
-        mut f1: F1,
-        mut f2: F2,
-        mut f3: F3,
-        mut f4: F4,
-        mut f5: F5,
-        mut f6: F6,
-        mut f7: F7,
-    ) -> Either7<B1, B2, B3, B4, B5, B6, B7>
-    where
-        F1: FnMut(A1) -> B1,
-        F2: FnMut(A2) -> B2,
-        F3: FnMut(A3) -> B3,
-        F4: FnMut(A4) -> B4,
-        F5: FnMut(A5) -> B5,
-        F6: FnMut(A6) -> B6,
-        F7: FnMut(A7) -> B7,
-    {
-        match self {
-            Either7::_1(a) => Either7::_1(f1(a)),
-            Either7::_2(a) => Either7::_2(f2(a)),
-            Either7::_3(a) => Either7::_3(f3(a)),
-            Either7::_4(a) => Either7::_4(f4(a)),
-            Either7::_5(a) => Either7::_5(f5(a)),
-            Either7::_6(a) => Either7::_6(f6(a)),
-            Either7::_7(a) => Either7::_7(f7(a)),
-        }
-    }
-
-    /// Maps only the first variant, leaving others unchanged.
-    pub fn map_1<B, F>(self, mut f: F) -> Either7<B, A2, A3, A4, A5, A6, A7>
-    where
-        F: FnMut(A1) -> B,
-    {
-        match self {
-            Either7::_1(a) => Either7::_1(f(a)),
-            Either7::_2(a) => Either7::_2(a),
-            Either7::_3(a) => Either7::_3(a),
-            Either7::_4(a) => Either7::_4(a),
-            Either7::_5(a) => Either7::_5(a),
-            Either7::_6(a) => Either7::_6(a),
-            Either7::_7(a) => Either7::_7(a),
-        }
-    }
-
-    pub fn map_2<B, F>(self, mut f: F) -> Either7<A1, B, A3, A4, A5, A6, A7>
-    where
-        F: FnMut(A2) -> B,
-    {
-        match self {
-            Either7::_1(a) => Either7::_1(a),
-            Either7::_2(a) => Either7::_2(f(a)),
-            Either7::_3(a) => Either7::_3(a),
-            Either7::_4(a) => Either7::_4(a),
-            Either7::_5(a) => Either7::_5(a),
-            Either7::_6(a) => Either7::_6(a),
-            Either7::_7(a) => Either7::_7(a),
-        }
-    }
-
-    pub fn map_3<B, F>(self, mut f: F) -> Either7<A1, A2, B, A4, A5, A6, A7>
-    where
-        F: FnMut(A3) -> B,
-    {
-        match self {
-            Either7::_1(a) => Either7::_1(a),
-            Either7::_2(a) => Either7::_2(a),
-            Either7::_3(a) => Either7::_3(f(a)),
-            Either7::_4(a) => Either7::_4(a),
-            Either7::_5(a) => Either7::_5(a),
-            Either7::_6(a) => Either7::_6(a),
-            Either7::_7(a) => Either7::_7(a),
-        }
-    }
-
-    pub fn map_4<B, F>(self, mut f: F) -> Either7<A1, A2, A3, B, A5, A6, A7>
-    where
-        F: FnMut(A4) -> B,
-    {
-        match self {
-            Either7::_1(a) => Either7::_1(a),
-            Either7::_2(a) => Either7::_2(a),
-            Either7::_3(a) => Either7::_3(a),
-            Either7::_4(a) => Either7::_4(f(a)),
-            Either7::_5(a) => Either7::_5(a),
-            Either7::_6(a) => Either7::_6(a),
-            Either7::_7(a) => Either7::_7(a),
-        }
-    }
-
-    pub fn map_5<B, F>(self, mut f: F) -> Either7<A1, A2, A3, A4, B, A6, A7>
-    where
-        F: FnMut(A5) -> B,
-    {
-        match self {
-            Either7::_1(a) => Either7::_1(a),
-            Either7::_2(a) => Either7::_2(a),
-            Either7::_3(a) => Either7::_3(a),
-            Either7::_4(a) => Either7::_4(a),
-            Either7::_5(a) => Either7::_5(f(a)),
-            Either7::_6(a) => Either7::_6(a),
-            Either7::_7(a) => Either7::_7(a),
-        }
-    }
-
-    pub fn map_6<B, F>(self, mut f: F) -> Either7<A1, A2, A3, A4, A5, B, A7>
-    where
-        F: FnMut(A6) -> B,
-    {
-        match self {
-            Either7::_1(a) => Either7::_1(a),
-            Either7::_2(a) => Either7::_2(a),
-            Either7::_3(a) => Either7::_3(a),
-            Either7::_4(a) => Either7::_4(a),
-            Either7::_5(a) => Either7::_5(a),
-            Either7::_6(a) => Either7::_6(f(a)),
-            Either7::_7(a) => Either7::_7(a),
-        }
-    }
-
-    pub fn map_7<B, F>(self, mut f: F) -> Either7<A1, A2, A3, A4, A5, A6, B>
-    where
-        F: FnMut(A7) -> B,
-    {
-        match self {
-            Either7::_1(a) => Either7::_1(a),
-            Either7::_2(a) => Either7::_2(a),
-            Either7::_3(a) => Either7::_3(a),
-            Either7::_4(a) => Either7::_4(a),
-            Either7::_5(a) => Either7::_5(a),
-            Either7::_6(a) => Either7::_6(a),
-            Either7::_7(a) => Either7::_7(f(a)),
-        }
-    }
-}
-
-impl<A1, A2, A3, A4, A5, A6, A7, A8> Either8<A1, A2, A3, A4, A5, A6, A7, A8> {
-    /// Maps all variants with separate functions.
-    pub fn map<B1, B2, B3, B4, B5, B6, B7, B8, F1, F2, F3, F4, F5, F6, F7, F8>(
-        self,
-        mut f1: F1,
-        mut f2: F2,
-        mut f3: F3,
-        mut f4: F4,
-        mut f5: F5,
-        mut f6: F6,
-        mut f7: F7,
-        mut f8: F8,
-    ) -> Either8<B1, B2, B3, B4, B5, B6, B7, B8>
-    where
-        F1: FnMut(A1) -> B1,
-        F2: FnMut(A2) -> B2,
-        F3: FnMut(A3) -> B3,
-        F4: FnMut(A4) -> B4,
-        F5: FnMut(A5) -> B5,
-        F6: FnMut(A6) -> B6,
-        F7: FnMut(A7) -> B7,
-        F8: FnMut(A8) -> B8,
-    {
-        match self {
-            Either8::_1(a) => Either8::_1(f1(a)),
-            Either8::_2(a) => Either8::_2(f2(a)),
-            Either8::_3(a) => Either8::_3(f3(a)),
-            Either8::_4(a) => Either8::_4(f4(a)),
-            Either8::_5(a) => Either8::_5(f5(a)),
-            Either8::_6(a) => Either8::_6(f6(a)),
-            Either8::_7(a) => Either8::_7(f7(a)),
-            Either8::_8(a) => Either8::_8(f8(a)),
-        }
-    }
-
-    /// Maps only the first variant, leaving others unchanged.
-    pub fn map_1<B, F>(self, mut f: F) -> Either8<B, A2, A3, A4, A5, A6, A7, A8>
-    where
-        F: FnMut(A1) -> B,
-    {
-        match self {
-            Either8::_1(a) => Either8::_1(f(a)),
-            Either8::_2(a) => Either8::_2(a),
-            Either8::_3(a) => Either8::_3(a),
-            Either8::_4(a) => Either8::_4(a),
-            Either8::_5(a) => Either8::_5(a),
-            Either8::_6(a) => Either8::_6(a),
-            Either8::_7(a) => Either8::_7(a),
-            Either8::_8(a) => Either8::_8(a),
-        }
-    }
-
-    pub fn map_2<B, F>(self, mut f: F) -> Either8<A1, B, A3, A4, A5, A6, A7, A8>
-    where
-        F: FnMut(A2) -> B,
-    {
-        match self {
-            Either8::_1(a) => Either8::_1(a),
-            Either8::_2(a) => Either8::_2(f(a)),
-            Either8::_3(a) => Either8::_3(a),
-            Either8::_4(a) => Either8::_4(a),
-            Either8::_5(a) => Either8::_5(a),
-            Either8::_6(a) => Either8::_6(a),
-            Either8::_7(a) => Either8::_7(a),
-            Either8::_8(a) => Either8::_8(a),
-        }
-    }
-
-    pub fn map_3<B, F>(self, mut f: F) -> Either8<A1, A2, B, A4, A5, A6, A7, A8>
-    where
-        F: FnMut(A3) -> B,
-    {
-        match self {
-            Either8::_1(a) => Either8::_1(a),
-            Either8::_2(a) => Either8::_2(a),
-            Either8::_3(a) => Either8::_3(f(a)),
-            Either8::_4(a) => Either8::_4(a),
-            Either8::_5(a) => Either8::_5(a),
-            Either8::_6(a) => Either8::_6(a),
-            Either8::_7(a) => Either8::_7(a),
-            Either8::_8(a) => Either8::_8(a),
-        }
-    }
-
-    pub fn map_4<B, F>(self, mut f: F) -> Either8<A1, A2, A3, B, A5, A6, A7, A8>
-    where
-        F: FnMut(A4) -> B,
-    {
-        match self {
-            Either8::_1(a) => Either8::_1(a),
-            Either8::_2(a) => Either8::_2(a),
-            Either8::_3(a) => Either8::_3(a),
-            Either8::_4(a) => Either8::_4(f(a)),
-            Either8::_5(a) => Either8::_5(a),
-            Either8::_6(a) => Either8::_6(a),
-            Either8::_7(a) => Either8::_7(a),
-            Either8::_8(a) => Either8::_8(a),
-        }
-    }
-
-    pub fn map_5<B, F>(self, mut f: F) -> Either8<A1, A2, A3, A4, B, A6, A7, A8>
-    where
-        F: FnMut(A5) -> B,
-    {
-        match self {
-            Either8::_1(a) => Either8::_1(a),
-            Either8::_2(a) => Either8::_2(a),
-            Either8::_3(a) => Either8::_3(a),
-            Either8::_4(a) => Either8::_4(a),
-            Either8::_5(a) => Either8::_5(f(a)),
-            Either8::_6(a) => Either8::_6(a),
-            Either8::_7(a) => Either8::_7(a),
-            Either8::_8(a) => Either8::_8(a),
-        }
-    }
-
-    pub fn map_6<B, F>(self, mut f: F) -> Either8<A1, A2, A3, A4, A5, B, A7, A8>
-    where
-        F: FnMut(A6) -> B,
-    {
-        match self {
-            Either8::_1(a) => Either8::_1(a),
-            Either8::_2(a) => Either8::_2(a),
-            Either8::_3(a) => Either8::_3(a),
-            Either8::_4(a) => Either8::_4(a),
-            Either8::_5(a) => Either8::_5(a),
-            Either8::_6(a) => Either8::_6(f(a)),
-            Either8::_7(a) => Either8::_7(a),
-            Either8::_8(a) => Either8::_8(a),
-        }
-    }
-
-    pub fn map_7<B, F>(self, mut f: F) -> Either8<A1, A2, A3, A4, A5, A6, B, A8>
-    where
-        F: FnMut(A7) -> B,
-    {
-        match self {
-            Either8::_1(a) => Either8::_1(a),
-            Either8::_2(a) => Either8::_2(a),
-            Either8::_3(a) => Either8::_3(a),
-            Either8::_4(a) => Either8::_4(a),
-            Either8::_5(a) => Either8::_5(a),
-            Either8::_6(a) => Either8::_6(a),
-            Either8::_7(a) => Either8::_7(f(a)),
-            Either8::_8(a) => Either8::_8(a),
-        }
-    }
-
-    pub fn map_8<B, F>(self, mut f: F) -> Either8<A1, A2, A3, A4, A5, A6, A7, B>
-    where
-        F: FnMut(A8) -> B,
-    {
-        match self {
-            Either8::_1(a) => Either8::_1(a),
-            Either8::_2(a) => Either8::_2(a),
-            Either8::_3(a) => Either8::_3(a),
-            Either8::_4(a) => Either8::_4(a),
-            Either8::_5(a) => Either8::_5(a),
-            Either8::_6(a) => Either8::_6(a),
-            Either8::_7(a) => Either8::_7(a),
-            Either8::_8(a) => Either8::_8(f(a)),
-        }
-    }
+    };
 }
 
 
-impl<A1, A2, A3, A4, A5, A6, A7, A8,A9> Either9<A1, A2, A3, A4, A5, A6, A7, A8,A9> {
-    /// Maps all variants with separate functions.
-    pub fn map<B1, B2, B3, B4, B5, B6, B7, B8,B9, F1, F2, F3, F4, F5, F6, F7, F8,F9>(
-        self,
-        mut f1: F1,
-        mut f2: F2,
-        mut f3: F3,
-        mut f4: F4,
-        mut f5: F5,
-        mut f6: F6,
-        mut f7: F7,
-        mut f8: F8,
-        mut f9: F9,
-    ) -> Either9<B1, B2, B3, B4, B5, B6, B7, B8,B9>
-    where
-        F1: FnMut(A1) -> B1,
-        F2: FnMut(A2) -> B2,
-        F3: FnMut(A3) -> B3,
-        F4: FnMut(A4) -> B4,
-        F5: FnMut(A5) -> B5,
-        F6: FnMut(A6) -> B6,
-        F7: FnMut(A7) -> B7,
-        F8: FnMut(A8) -> B8,
-        F9: FnMut(A9) -> B9,
-    {
-        match self {
-            Either9::_1(a) => Either9::_1(f1(a)),
-            Either9::_2(a) => Either9::_2(f2(a)),
-            Either9::_3(a) => Either9::_3(f3(a)),
-            Either9::_4(a) => Either9::_4(f4(a)),
-            Either9::_5(a) => Either9::_5(f5(a)),
-            Either9::_6(a) => Either9::_6(f6(a)),
-            Either9::_7(a) => Either9::_7(f7(a)),
-            Either9::_8(a) => Either9::_8(f8(a)),
-            Either9::_9(a) => Either9::_9(f9(a)),
-        }
-    }
+// Either - map_0, map_1
+impl_map_n!(map_0 for Either => [] : A1 = Left : [A2 = Right]);
+impl_map_n!(map_1 for Either => [A1 = Left] : A2 = Right : []);
 
-    /// Maps only the first variant, leaving others unchanged.
-    pub fn map_1<B, F>(self, mut f: F) -> Either9<B, A2, A3, A4, A5, A6, A7, A8,A9>
-    where
-        F: FnMut(A1) -> B,
-    {
-        match self {
-            Either9::_1(a) => Either9::_1(f(a)),
-            Either9::_2(a) => Either9::_2(a),
-            Either9::_3(a) => Either9::_3(a),
-            Either9::_4(a) => Either9::_4(a),
-            Either9::_5(a) => Either9::_5(a),
-            Either9::_6(a) => Either9::_6(a),
-            Either9::_7(a) => Either9::_7(a),
-            Either9::_8(a) => Either9::_8(a),
-            Either9::_9(a) => Either9::_9(a),
-        }
-    }
+// Either3 - map_0, map_1, map_2
+impl_map_n!(map_0 for Either3 => [] : A1 = Left : [A2 = Middle, A3 = Right]);
+impl_map_n!(map_1 for Either3 => [A1 = Left] : A2 = Middle : [A3 = Right]);
+impl_map_n!(map_2 for Either3 => [A1 = Left, A2 = Middle] : A3 = Right : []);
 
-    pub fn map_2<B, F>(self, mut f: F) -> Either9<A1, B, A3, A4, A5, A6, A7, A8,A9>
-    where
-        F: FnMut(A2) -> B,
-    {
-        match self {
-            Either9::_1(a) => Either9::_1(a),
-            Either9::_2(a) => Either9::_2(f(a)),
-            Either9::_3(a) => Either9::_3(a),
-            Either9::_4(a) => Either9::_4(a),
-            Either9::_5(a) => Either9::_5(a),
-            Either9::_6(a) => Either9::_6(a),
-            Either9::_7(a) => Either9::_7(a),
-            Either9::_8(a) => Either9::_8(a),
-            Either9::_9(a) => Either9::_9(a),
-        }
-    }
+// Either4 - map_0, map_1, map_2, map_3
+impl_map_n!(map_0 for Either4 => [] : A1 = _1 : [A2 = _2, A3 = _3, A4 = _4]);
+impl_map_n!(map_1 for Either4 => [A1 = _1] : A2 = _2 : [A3 = _3, A4 = _4]);
+impl_map_n!(map_2 for Either4 => [A1 = _1, A2 = _2] : A3 = _3 : [A4 = _4]);
+impl_map_n!(map_3 for Either4 => [A1 = _1, A2 = _2, A3 = _3] : A4 = _4 : []);
 
-    pub fn map_3<B, F>(self, mut f: F) -> Either9<A1, A2, B, A4, A5, A6, A7, A8,A9>
-    where
-        F: FnMut(A3) -> B,
-    {
-        match self {
-            Either9::_1(a) => Either9::_1(a),
-            Either9::_2(a) => Either9::_2(a),
-            Either9::_3(a) => Either9::_3(f(a)),
-            Either9::_4(a) => Either9::_4(a),
-            Either9::_5(a) => Either9::_5(a),
-            Either9::_6(a) => Either9::_6(a),
-            Either9::_7(a) => Either9::_7(a),
-            Either9::_8(a) => Either9::_8(a),
-            Either9::_9(a) => Either9::_9(a),
-        }
-    }
+// Either5 - map_0 through map_4
+impl_map_n!(map_0 for Either5 => [] : A1 = _1 : [A2 = _2, A3 = _3, A4 = _4, A5 = _5]);
+impl_map_n!(map_1 for Either5 => [A1 = _1] : A2 = _2 : [A3 = _3, A4 = _4, A5 = _5]);
+impl_map_n!(map_2 for Either5 => [A1 = _1, A2 = _2] : A3 = _3 : [A4 = _4, A5 = _5]);
+impl_map_n!(map_3 for Either5 => [A1 = _1, A2 = _2, A3 = _3] : A4 = _4 : [A5 = _5]);
+impl_map_n!(map_4 for Either5 => [A1 = _1, A2 = _2, A3 = _3, A4 = _4] : A5 = _5 : []);
 
-    pub fn map_4<B, F>(self, mut f: F) -> Either9<A1, A2, A3, B, A5, A6, A7, A8,A9>
-    where
-        F: FnMut(A4) -> B,
-    {
-        match self {
-            Either9::_1(a) => Either9::_1(a),
-            Either9::_2(a) => Either9::_2(a),
-            Either9::_3(a) => Either9::_3(a),
-            Either9::_4(a) => Either9::_4(f(a)),
-            Either9::_5(a) => Either9::_5(a),
-            Either9::_6(a) => Either9::_6(a),
-            Either9::_7(a) => Either9::_7(a),
-            Either9::_8(a) => Either9::_8(a),
-            Either9::_9(a) => Either9::_9(a),
-        }
-    }
+// Either6 - map_0 through map_5
+impl_map_n!(map_0 for Either6 => [] : A1 = _1 : [A2 = _2, A3 = _3, A4 = _4, A5 = _5, A6 = _6]);
+impl_map_n!(map_1 for Either6 => [A1 = _1] : A2 = _2 : [A3 = _3, A4 = _4, A5 = _5, A6 = _6]);
+impl_map_n!(map_2 for Either6 => [A1 = _1, A2 = _2] : A3 = _3 : [A4 = _4, A5 = _5, A6 = _6]);
+impl_map_n!(map_3 for Either6 => [A1 = _1, A2 = _2, A3 = _3] : A4 = _4 : [A5 = _5, A6 = _6]);
+impl_map_n!(map_4 for Either6 => [A1 = _1, A2 = _2, A3 = _3, A4 = _4] : A5 = _5 : [A6 = _6]);
+impl_map_n!(map_5 for Either6 => [A1 = _1, A2 = _2, A3 = _3, A4 = _4, A5 = _5] : A6 = _6 : []);
 
-    pub fn map_5<B, F>(self, mut f: F) -> Either9<A1, A2, A3, A4, B, A6, A7, A8,A9>
-    where
-        F: FnMut(A5) -> B,
-    {
-        match self {
-            Either9::_1(a) => Either9::_1(a),
-            Either9::_2(a) => Either9::_2(a),
-            Either9::_3(a) => Either9::_3(a),
-            Either9::_4(a) => Either9::_4(a),
-            Either9::_5(a) => Either9::_5(f(a)),
-            Either9::_6(a) => Either9::_6(a),
-            Either9::_7(a) => Either9::_7(a),
-            Either9::_8(a) => Either9::_8(a),
-            Either9::_9(a) => Either9::_9(a),
-        }
-    }
+// Either7 - map_0 through map_6
+impl_map_n!(map_0 for Either7 => [] : A1 = _1 : [A2 = _2, A3 = _3, A4 = _4, A5 = _5, A6 = _6, A7 = _7]);
+impl_map_n!(map_1 for Either7 => [A1 = _1] : A2 = _2 : [A3 = _3, A4 = _4, A5 = _5, A6 = _6, A7 = _7]);
+impl_map_n!(map_2 for Either7 => [A1 = _1, A2 = _2] : A3 = _3 : [A4 = _4, A5 = _5, A6 = _6, A7 = _7]);
+impl_map_n!(map_3 for Either7 => [A1 = _1, A2 = _2, A3 = _3] : A4 = _4 : [A5 = _5, A6 = _6, A7 = _7]);
+impl_map_n!(map_4 for Either7 => [A1 = _1, A2 = _2, A3 = _3, A4 = _4] : A5 = _5 : [A6 = _6, A7 = _7]);
+impl_map_n!(map_5 for Either7 => [A1 = _1, A2 = _2, A3 = _3, A4 = _4, A5 = _5] : A6 = _6 : [A7 = _7]);
+impl_map_n!(map_6 for Either7 => [A1 = _1, A2 = _2, A3 = _3, A4 = _4, A5 = _5, A6 = _6] : A7 = _7 : []);
 
-    pub fn map_6<B, F>(self, mut f: F) -> Either9<A1, A2, A3, A4, A5, B, A7, A8,A9>
-    where
-        F: FnMut(A6) -> B,
-    {
-        match self {
-            Either9::_1(a) => Either9::_1(a),
-            Either9::_2(a) => Either9::_2(a),
-            Either9::_3(a) => Either9::_3(a),
-            Either9::_4(a) => Either9::_4(a),
-            Either9::_5(a) => Either9::_5(a),
-            Either9::_6(a) => Either9::_6(f(a)),
-            Either9::_7(a) => Either9::_7(a),
-            Either9::_8(a) => Either9::_8(a),
-            Either9::_9(a) => Either9::_9(a),
-        }
-    }
+// Either8 - map_0 through map_7
+impl_map_n!(map_0 for Either8 => [] : A1 = _1 : [A2 = _2, A3 = _3, A4 = _4, A5 = _5, A6 = _6, A7 = _7, A8 = _8]);
+impl_map_n!(map_1 for Either8 => [A1 = _1] : A2 = _2 : [A3 = _3, A4 = _4, A5 = _5, A6 = _6, A7 = _7, A8 = _8]);
+impl_map_n!(map_2 for Either8 => [A1 = _1, A2 = _2] : A3 = _3 : [A4 = _4, A5 = _5, A6 = _6, A7 = _7, A8 = _8]);
+impl_map_n!(map_3 for Either8 => [A1 = _1, A2 = _2, A3 = _3] : A4 = _4 : [A5 = _5, A6 = _6, A7 = _7, A8 = _8]);
+impl_map_n!(map_4 for Either8 => [A1 = _1, A2 = _2, A3 = _3, A4 = _4] : A5 = _5 : [A6 = _6, A7 = _7, A8 = _8]);
+impl_map_n!(map_5 for Either8 => [A1 = _1, A2 = _2, A3 = _3, A4 = _4, A5 = _5] : A6 = _6 : [A7 = _7, A8 = _8]);
+impl_map_n!(map_6 for Either8 => [A1 = _1, A2 = _2, A3 = _3, A4 = _4, A5 = _5, A6 = _6] : A7 = _7 : [A8 = _8]);
+impl_map_n!(map_7 for Either8 => [A1 = _1, A2 = _2, A3 = _3, A4 = _4, A5 = _5, A6 = _6, A7 = _7] : A8 = _8 : []);
 
-    pub fn map_7<B, F>(self, mut f: F) -> Either9<A1, A2, A3, A4, A5, A6, B, A8,A9>
-    where
-        F: FnMut(A7) -> B,
-    {
-        match self {
-            Either9::_1(a) => Either9::_1(a),
-            Either9::_2(a) => Either9::_2(a),
-            Either9::_3(a) => Either9::_3(a),
-            Either9::_4(a) => Either9::_4(a),
-            Either9::_5(a) => Either9::_5(a),
-            Either9::_6(a) => Either9::_6(a),
-            Either9::_7(a) => Either9::_7(f(a)),
-            Either9::_8(a) => Either9::_8(a),
-            Either9::_9(a) => Either9::_9(a),
-        }
-    }
+// Either9 - map_0 through map_8
+impl_map_n!(map_0 for Either9 => [] : A1 = _1 : [A2 = _2, A3 = _3, A4 = _4, A5 = _5, A6 = _6, A7 = _7, A8 = _8, A9 = _9]);
+impl_map_n!(map_1 for Either9 => [A1 = _1] : A2 = _2 : [A3 = _3, A4 = _4, A5 = _5, A6 = _6, A7 = _7, A8 = _8, A9 = _9]);
+impl_map_n!(map_2 for Either9 => [A1 = _1, A2 = _2] : A3 = _3 : [A4 = _4, A5 = _5, A6 = _6, A7 = _7, A8 = _8, A9 = _9]);
+impl_map_n!(map_3 for Either9 => [A1 = _1, A2 = _2, A3 = _3] : A4 = _4 : [A5 = _5, A6 = _6, A7 = _7, A8 = _8, A9 = _9]);
+impl_map_n!(map_4 for Either9 => [A1 = _1, A2 = _2, A3 = _3, A4 = _4] : A5 = _5 : [A6 = _6, A7 = _7, A8 = _8, A9 = _9]);
+impl_map_n!(map_5 for Either9 => [A1 = _1, A2 = _2, A3 = _3, A4 = _4, A5 = _5] : A6 = _6 : [A7 = _7, A8 = _8, A9 = _9]);
+impl_map_n!(map_6 for Either9 => [A1 = _1, A2 = _2, A3 = _3, A4 = _4, A5 = _5, A6 = _6] : A7 = _7 : [A8 = _8, A9 = _9]);
+impl_map_n!(map_7 for Either9 => [A1 = _1, A2 = _2, A3 = _3, A4 = _4, A5 = _5, A6 = _6, A7 = _7] : A8 = _8 : [A9 = _9]);
+impl_map_n!(map_8 for Either9 => [A1 = _1, A2 = _2, A3 = _3, A4 = _4, A5 = _5, A6 = _6, A7 = _7, A8 = _8] : A9 = _9 : []);
 
-    pub fn map_8<B, F>(self, mut f: F) -> Either9<A1, A2, A3, A4, A5, A6, A7, B,A9>
-    where
-        F: FnMut(A8) -> B,
-    {
-        match self {
-            Either9::_1(a) => Either9::_1(a),
-            Either9::_2(a) => Either9::_2(a),
-            Either9::_3(a) => Either9::_3(a),
-            Either9::_4(a) => Either9::_4(a),
-            Either9::_5(a) => Either9::_5(a),
-            Either9::_6(a) => Either9::_6(a),
-            Either9::_7(a) => Either9::_7(a),
-            Either9::_8(a) => Either9::_8(f(a)),
-            Either9::_9(a) => Either9::_9(a),
-        }
-    }
+// Either10 - map_0 through map_9
+impl_map_n!(map_0 for Either10 => [] : A1 = _1 : [A2 = _2, A3 = _3, A4 = _4, A5 = _5, A6 = _6, A7 = _7, A8 = _8, A9 = _9, A10 = _10]);
+impl_map_n!(map_1 for Either10 => [A1 = _1] : A2 = _2 : [A3 = _3, A4 = _4, A5 = _5, A6 = _6, A7 = _7, A8 = _8, A9 = _9, A10 = _10]);
+impl_map_n!(map_2 for Either10 => [A1 = _1, A2 = _2] : A3 = _3 : [A4 = _4, A5 = _5, A6 = _6, A7 = _7, A8 = _8, A9 = _9, A10 = _10]);
+impl_map_n!(map_3 for Either10 => [A1 = _1, A2 = _2, A3 = _3] : A4 = _4 : [A5 = _5, A6 = _6, A7 = _7, A8 = _8, A9 = _9, A10 = _10]);
+impl_map_n!(map_4 for Either10 => [A1 = _1, A2 = _2, A3 = _3, A4 = _4] : A5 = _5 : [A6 = _6, A7 = _7, A8 = _8, A9 = _9, A10 = _10]);
+impl_map_n!(map_5 for Either10 => [A1 = _1, A2 = _2, A3 = _3, A4 = _4, A5 = _5] : A6 = _6 : [A7 = _7, A8 = _8, A9 = _9, A10 = _10]);
+impl_map_n!(map_6 for Either10 => [A1 = _1, A2 = _2, A3 = _3, A4 = _4, A5 = _5, A6 = _6] : A7 = _7 : [A8 = _8, A9 = _9, A10 = _10]);
+impl_map_n!(map_7 for Either10 => [A1 = _1, A2 = _2, A3 = _3, A4 = _4, A5 = _5, A6 = _6, A7 = _7] : A8 = _8 : [A9 = _9, A10 = _10]);
+impl_map_n!(map_8 for Either10 => [A1 = _1, A2 = _2, A3 = _3, A4 = _4, A5 = _5, A6 = _6, A7 = _7, A8 = _8] : A9 = _9 : [A10 = _10]);
+impl_map_n!(map_9 for Either10 => [A1 = _1, A2 = _2, A3 = _3, A4 = _4, A5 = _5, A6 = _6, A7 = _7, A8 = _8, A9 = _9] : A10 = _10 : []);
 
-    pub fn map_9<B, F>(self, mut f: F) -> Either9<A1, A2, A3, A4, A5, A6, A7, A8,B>
-    where
-        F: FnMut(A9) -> B,
-    {
-        match self {
-            Either9::_1(a) => Either9::_1(a),
-            Either9::_2(a) => Either9::_2(a),
-            Either9::_3(a) => Either9::_3(a),
-            Either9::_4(a) => Either9::_4(a),
-            Either9::_5(a) => Either9::_5(a),
-            Either9::_6(a) => Either9::_6(a),
-            Either9::_7(a) => Either9::_7(a),
-            Either9::_8(a) => Either9::_8(a),
-            Either9::_9(a) => Either9::_9(f(a)),
-        }
-    }
-}
-
-impl<A1, A2, A3, A4, A5, A6, A7, A8,A9,A10> Either10<A1, A2, A3, A4, A5, A6, A7, A8,A9,A10> {
-    /// Maps all variants with separate functions.
-    pub fn map<B1, B2, B3, B4, B5, B6, B7, B8,B9,B10, F1, F2, F3, F4, F5, F6, F7, F8,F9,F10>(
-        self,
-        mut f1: F1,
-        mut f2: F2,
-        mut f3: F3,
-        mut f4: F4,
-        mut f5: F5,
-        mut f6: F6,
-        mut f7: F7,
-        mut f8: F8,
-        mut f9: F9,
-        mut f10: F10,
-    ) -> Either10<B1, B2, B3, B4, B5, B6, B7, B8,B9,B10>
-    where
-        F1: FnMut(A1) -> B1,
-        F2: FnMut(A2) -> B2,
-        F3: FnMut(A3) -> B3,
-        F4: FnMut(A4) -> B4,
-        F5: FnMut(A5) -> B5,
-        F6: FnMut(A6) -> B6,
-        F7: FnMut(A7) -> B7,
-        F8: FnMut(A8) -> B8,
-        F9: FnMut(A9) -> B9,
-        F10: FnMut(A10) -> B10,
-    {
-        match self {
-            Either10::_1(a) => Either10::_1(f1(a)),
-            Either10::_2(a) => Either10::_2(f2(a)),
-            Either10::_3(a) => Either10::_3(f3(a)),
-            Either10::_4(a) => Either10::_4(f4(a)),
-            Either10::_5(a) => Either10::_5(f5(a)),
-            Either10::_6(a) => Either10::_6(f6(a)),
-            Either10::_7(a) => Either10::_7(f7(a)),
-            Either10::_8(a) => Either10::_8(f8(a)),
-            Either10::_9(a) => Either10::_9(f9(a)),
-            Either10::_10(a) => Either10::_10(f10(a)),
-        }
-    }
-
-    /// Maps only the first variant, leaving others unchanged.
-    pub fn map_1<B, F>(self, mut f: F) -> Either10<B, A2, A3, A4, A5, A6, A7, A8,A9,A10>
-    where
-        F: FnMut(A1) -> B,
-    {
-        match self {
-            Either10::_1(a) => Either10::_1(f(a)),
-            Either10::_2(a) => Either10::_2(a),
-            Either10::_3(a) => Either10::_3(a),
-            Either10::_4(a) => Either10::_4(a),
-            Either10::_5(a) => Either10::_5(a),
-            Either10::_6(a) => Either10::_6(a),
-            Either10::_7(a) => Either10::_7(a),
-            Either10::_8(a) => Either10::_8(a),
-            Either10::_9(a) => Either10::_9(a),
-            Either10::_10(a) => Either10::_10(a),
-            
-        }
-    }
-
-    pub fn map_2<B, F>(self, mut f: F) -> Either10<A1, B, A3, A4, A5, A6, A7, A8,A9, A10>
-    where
-        F: FnMut(A2) -> B,
-    {
-        match self {
-            Either10::_1(a) => Either10::_1(a),
-            Either10::_2(a) => Either10::_2(f(a)),
-            Either10::_3(a) => Either10::_3(a),
-            Either10::_4(a) => Either10::_4(a),
-            Either10::_5(a) => Either10::_5(a),
-            Either10::_6(a) => Either10::_6(a),
-            Either10::_7(a) => Either10::_7(a),
-            Either10::_8(a) => Either10::_8(a),
-            Either10::_9(a) => Either10::_9(a),
-            Either10::_10(a) => Either10::_10(a),
-        }
-    }
-
-    pub fn map_3<B, F>(self, mut f: F) -> Either10<A1, A2, B, A4, A5, A6, A7, A8,A9, A10>
-    where
-        F: FnMut(A3) -> B,
-    {
-        match self {
-            Either10::_1(a) => Either10::_1(a),
-            Either10::_2(a) => Either10::_2(a),
-            Either10::_3(a) => Either10::_3(f(a)),
-            Either10::_4(a) => Either10::_4(a),
-            Either10::_5(a) => Either10::_5(a),
-            Either10::_6(a) => Either10::_6(a),
-            Either10::_7(a) => Either10::_7(a),
-            Either10::_8(a) => Either10::_8(a),
-            Either10::_9(a) => Either10::_9(a),
-            Either10::_10(a) => Either10::_10(a),
-        }
-    }
-
-    pub fn map_4<B, F>(self, mut f: F) -> Either10<A1, A2, A3, B, A5, A6, A7, A8,A9, A10>
-    where
-        F: FnMut(A4) -> B,
-    {
-        match self {
-            Either10::_1(a) => Either10::_1(a),
-            Either10::_2(a) => Either10::_2(a),
-            Either10::_3(a) => Either10::_3(a),
-            Either10::_4(a) => Either10::_4(f(a)),
-            Either10::_5(a) => Either10::_5(a),
-            Either10::_6(a) => Either10::_6(a),
-            Either10::_7(a) => Either10::_7(a),
-            Either10::_8(a) => Either10::_8(a),
-            Either10::_9(a) => Either10::_9(a),
-            Either10::_10(a) => Either10::_10(a),
-        }
-    }
-
-    pub fn map_5<B, F>(self, mut f: F) -> Either10<A1, A2, A3, A4, B, A6, A7, A8,A9, A10>
-    where
-        F: FnMut(A5) -> B,
-    {
-        match self {
-            Either10::_1(a) => Either10::_1(a),
-            Either10::_2(a) => Either10::_2(a),
-            Either10::_3(a) => Either10::_3(a),
-            Either10::_4(a) => Either10::_4(a),
-            Either10::_5(a) => Either10::_5(f(a)),
-            Either10::_6(a) => Either10::_6(a),
-            Either10::_7(a) => Either10::_7(a),
-            Either10::_8(a) => Either10::_8(a),
-            Either10::_9(a) => Either10::_9(a),
-            Either10::_10(a) => Either10::_10(a),
-        }
-    }
-
-    pub fn map_6<B, F>(self, mut f: F) -> Either10<A1, A2, A3, A4, A5, B, A7, A8,A9, A10>
-    where
-        F: FnMut(A6) -> B,
-    {
-        match self {
-            Either10::_1(a) => Either10::_1(a),
-            Either10::_2(a) => Either10::_2(a),
-            Either10::_3(a) => Either10::_3(a),
-            Either10::_4(a) => Either10::_4(a),
-            Either10::_5(a) => Either10::_5(a),
-            Either10::_6(a) => Either10::_6(f(a)),
-            Either10::_7(a) => Either10::_7(a),
-            Either10::_8(a) => Either10::_8(a),
-            Either10::_9(a) => Either10::_9(a),
-            Either10::_10(a) => Either10::_10(a),
-        }
-    }
-
-    pub fn map_7<B, F>(self, mut f: F) -> Either10<A1, A2, A3, A4, A5, A6, B, A8,A9, A10>
-    where
-        F: FnMut(A7) -> B,
-    {
-        match self {
-            Either10::_1(a) => Either10::_1(a),
-            Either10::_2(a) => Either10::_2(a),
-            Either10::_3(a) => Either10::_3(a),
-            Either10::_4(a) => Either10::_4(a),
-            Either10::_5(a) => Either10::_5(a),
-            Either10::_6(a) => Either10::_6(a),
-            Either10::_7(a) => Either10::_7(f(a)),
-            Either10::_8(a) => Either10::_8(a),
-            Either10::_9(a) => Either10::_9(a),
-            Either10::_10(a) => Either10::_10(a),
-        }
-    }
-
-    pub fn map_8<B, F>(self, mut f: F) -> Either10<A1, A2, A3, A4, A5, A6, A7, B,A9, A10>
-    where
-        F: FnMut(A8) -> B,
-    {
-        match self {
-            Either10::_1(a) => Either10::_1(a),
-            Either10::_2(a) => Either10::_2(a),
-            Either10::_3(a) => Either10::_3(a),
-            Either10::_4(a) => Either10::_4(a),
-            Either10::_5(a) => Either10::_5(a),
-            Either10::_6(a) => Either10::_6(a),
-            Either10::_7(a) => Either10::_7(a),
-            Either10::_8(a) => Either10::_8(f(a)),
-            Either10::_9(a) => Either10::_9(a),
-            Either10::_10(a) => Either10::_10(a),
-        }
-    }
-
-    pub fn map_9<B, F>(self, mut f: F) -> Either10<A1, A2, A3, A4, A5, A6, A7, A8,B,A10>
-    where
-        F: FnMut(A9) -> B,
-    {
-        match self {
-            Either10::_1(a) => Either10::_1(a),
-            Either10::_2(a) => Either10::_2(a),
-            Either10::_3(a) => Either10::_3(a),
-            Either10::_4(a) => Either10::_4(a),
-            Either10::_5(a) => Either10::_5(a),
-            Either10::_6(a) => Either10::_6(a),
-            Either10::_7(a) => Either10::_7(a),
-            Either10::_8(a) => Either10::_8(a),
-            Either10::_9(a) => Either10::_9(f(a)),
-            Either10::_10(a) => Either10::_10(a),
-        }
-    }
-    pub fn map_10<B, F>(self, mut f: F) -> Either10<A1, A2, A3, A4, A5, A6, A7, A8,A9,B>
-    where
-        F: FnMut(A10) -> B,
-    {
-        match self {
-            Either10::_1(a) => Either10::_1(a),
-            Either10::_2(a) => Either10::_2(a),
-            Either10::_3(a) => Either10::_3(a),
-            Either10::_4(a) => Either10::_4(a),
-            Either10::_5(a) => Either10::_5(a),
-            Either10::_6(a) => Either10::_6(a),
-            Either10::_7(a) => Either10::_7(a),
-            Either10::_8(a) => Either10::_8(a),
-            Either10::_9(a) => Either10::_9(a),
-            Either10::_10(a) => Either10::_10(f(a)),
-        }
-    }
-}
-
-
-
-
-impl<A> Foldable for Either3<A, A, A> {
-    type Result = A;
-    fn fold(self) -> A {
-        match self {
-            Either3::Left(a) | Either3::Middle(a) | Either3::Right(a) => a,
-        }
-    }
-}
-
-impl<A> Foldable for Either4<A, A, A, A> {
-    type Result = A;
-    fn fold(self) -> A {
-        match self {
-            Either4::_1(a) | Either4::_2(a) | Either4::_3(a) | Either4::_4(a) => a,
-        }
-    }
-}
-
-impl<A> Foldable for Either5<A, A, A, A, A> {
-    type Result = A;
-    fn fold(self) -> A {
-        match self {
-            Either5::_1(a) | Either5::_2(a) | Either5::_3(a) | Either5::_4(a) | Either5::_5(a) => a,
-        }
-    }
-}
-
-impl<A> Foldable for Either6<A, A, A, A, A, A> {
-    type Result = A;
-    fn fold(self) -> A {
-        match self {
-            Either6::_1(a) | Either6::_2(a) | Either6::_3(a) | 
-            Either6::_4(a) | Either6::_5(a) | Either6::_6(a) => a,
-        }
-    }
-}
-
-impl<A> Foldable for Either7<A, A, A, A, A, A, A> {
-    type Result = A;
-    fn fold(self) -> A {
-        match self {
-            Either7::_1(a) | Either7::_2(a) | Either7::_3(a) | Either7::_4(a) |
-            Either7::_5(a) | Either7::_6(a) | Either7::_7(a) => a,
-        }
-    }
-}
-
-impl<A> Foldable for Either8<A, A, A, A, A, A, A, A> {
-    type Result = A;
-    fn fold(self) -> A {
-        match self {
-            Either8::_1(a) | Either8::_2(a) | Either8::_3(a) | Either8::_4(a) |
-            Either8::_5(a) | Either8::_6(a) | Either8::_7(a) | Either8::_8(a) => a,
-        }
-    }
-}
-
-impl<A> Foldable for Either9<A, A, A, A, A, A, A, A, A> {
-    type Result = A;
-    fn fold(self) -> A {
-        match self {
-            Either9::_1(a) | Either9::_2(a) | Either9::_3(a) | Either9::_4(a) |
-            Either9::_5(a) | Either9::_6(a) | Either9::_7(a) | Either9::_8(a) |
-            Either9::_9(a) => a,
-        }
-    }
-}
-
-impl<A> Foldable for Either10<A, A, A, A, A, A, A, A, A, A> {
-    type Result = A;
-    fn fold(self) -> A {
-        match self {
-            Either10::_1(a) | Either10::_2(a) | Either10::_3(a) | Either10::_4(a) |
-            Either10::_5(a) | Either10::_6(a) | Either10::_7(a) | Either10::_8(a) |
-            Either10::_9(a) | Either10::_10(a) => a,
-        }
-    }
-}
 
 
 
@@ -1275,18 +188,145 @@ pub trait Foldable {
 }
 
 
-
-
-
-// Implementation for Either with the same type in both variants
-impl<A> Foldable for Either<A, A> {
-    type Result = A;
-    fn fold(self) -> A {
-        match self {
-            Either::Left(c) | Either::Right(c) => c,
-        }
-    }
+macro_rules! ident_as_a {
+    ( $t: ident ) => { A };
 }
+
+/// Macro to implement Foldable trait for Either types with same variants
+macro_rules! impl_either_foldable {
+ 
+
+    
+
+    // For Either3 through Either10
+    ($type:ident, $($variant:ident),+) => {
+        impl<A> Foldable for $type<$(ident_as_a!($variant),)+> {
+            type Result = A;
+            fn fold(self) -> A {
+                match self {
+                    $($type::$variant(a) )|+ => a,
+                }
+            }
+        }
+    };
+}
+
+// Apply the macro for each Either type
+impl_either_foldable!(Either, Left, Right);
+impl_either_foldable!(Either3, Left, Middle, Right);
+impl_either_foldable!(Either4, _1, _2, _3, _4);
+impl_either_foldable!(Either5, _1, _2, _3, _4, _5);
+impl_either_foldable!(Either6, _1, _2, _3, _4, _5, _6);
+impl_either_foldable!(Either7, _1, _2, _3, _4, _5, _6, _7);
+impl_either_foldable!(Either8, _1, _2, _3, _4, _5, _6, _7, _8);
+impl_either_foldable!(Either9, _1, _2, _3, _4, _5, _6, _7, _8, _9);
+impl_either_foldable!(Either10, _1, _2, _3, _4, _5, _6, _7, _8, _9, _10);
+
+
+
+/// Macro to implement MultiFoldable traits for all Either types
+macro_rules! impl_all_multi_foldables {
+    ($variant_type:ident, $($type_param:ident),+) => {
+        // Level 1 (Base level using Foldable)
+        impl<A, $($type_param),+> MultiFoldable1 for $variant_type<$($type_param),+>
+        where
+            $(
+                $type_param: Foldable<Result = A>,
+            )+
+        {
+            type Result = A;
+            fn multi_fold_1(self) -> A {
+                match self {
+                    $(
+                        $variant_type::$type_param(a) => a.fold(),
+                    )+
+                }
+            }
+        }
+
+        // Level 2 (Using MultiFoldable1)
+        impl<A, $($type_param),+> MultiFoldable2 for $variant_type<$($type_param),+>
+        where
+            $(
+                $type_param: MultiFoldable1<Result = A>,
+            )+
+        {
+            type Result = A;
+            fn multi_fold_2(self) -> A {
+                match self {
+                    $(
+                        $variant_type::$type_param(a) => a.multi_fold_1(),
+                    )+
+                }
+            }
+        }
+
+        // Level 3 (Using MultiFoldable2)
+        impl<A, $($type_param),+> MultiFoldable3 for $variant_type<$($type_param),+>
+        where
+            $(
+                $type_param: MultiFoldable2<Result = A>,
+            )+
+        {
+            type Result = A;
+            fn multi_fold_3(self) -> A {
+                match self {
+                    $(
+                        $variant_type::$type_param(a) => a.multi_fold_2(),
+                    )+
+                }
+            }
+        }
+
+        // Level 4 (Using MultiFoldable3)
+        impl<A, $($type_param),+> MultiFoldable4 for $variant_type<$($type_param),+>
+        where
+            $(
+                $type_param: MultiFoldable3<Result = A>,
+            )+
+        {
+            type Result = A;
+            fn multi_fold_4(self) -> A {
+                match self {
+                    $(
+                        $variant_type::$type_param(a) => a.multi_fold_3(),
+                    )+
+                }
+            }
+        }
+
+        // Level 5 (Using MultiFoldable4)
+        impl<A, $($type_param),+> MultiFoldable5 for $variant_type<$($type_param),+>
+        where
+            $(
+                $type_param: MultiFoldable4<Result = A>,
+            )+
+        {
+            type Result = A;
+            fn multi_fold_5(self) -> A {
+                match self {
+                    $(
+                        $variant_type::$type_param(a) => a.multi_fold_4(),
+                    )+
+                }
+            }
+        }
+    };
+}
+
+// Implement MultiFoldable traits for all Either types
+impl_all_multi_foldables!(Either, Left, Right);
+impl_all_multi_foldables!(Either3, Left, Middle, Right);
+impl_all_multi_foldables!(Either4, _1, _2, _3, _4);
+impl_all_multi_foldables!(Either5, _1, _2, _3, _4, _5);
+impl_all_multi_foldables!(Either6, _1, _2, _3, _4, _5, _6);
+impl_all_multi_foldables!(Either7, _1, _2, _3, _4, _5, _6, _7);
+impl_all_multi_foldables!(Either8, _1, _2, _3, _4, _5, _6, _7, _8);
+impl_all_multi_foldables!(Either9, _1, _2, _3, _4, _5, _6, _7, _8, _9);
+impl_all_multi_foldables!(Either10, _1, _2, _3, _4, _5, _6, _7, _8, _9, _10);
+
+
+
 
 
 /// Trait for types that can be folded to a common result type.
@@ -1402,1211 +442,8 @@ pub trait MultiFoldable5 {
 pub struct Zero;
 pub struct S<N>(std::marker::PhantomData<N>);
 
-impl<A,B,C> MultiFoldable1 for Either<B,C>
-where
-    B:Foldable<Result = A>,
-    C:Foldable<Result = A>,
 
-{
-    type Result = A;
-    fn multi_fold_1(self) -> A {
-        match self {
-            Either::Left(a) => a.fold(),
-            Either::Right(b) => b.fold(),
-        }
-    }
-}
 
-impl<A,B,C> MultiFoldable2 for Either<B,C>
-where
-    B:MultiFoldable1<Result = A>,
-    C:MultiFoldable1<Result = A>,
-
-{
-    type Result = A;
-    fn multi_fold_2(self) -> A {
-        match self {
-            Either::Left(a) => a.multi_fold_1(),
-            Either::Right(b) => b.multi_fold_1(),
-        }
-    }
-}
-
-impl<A,B,C> MultiFoldable3 for Either<B,C>
-where
-    B:MultiFoldable2<Result = A>,
-    C:MultiFoldable2<Result = A>,
-
-{
-    type Result = A;
-    fn multi_fold_3(self) -> A {
-        match self {
-            Either::Left(a) => a.multi_fold_2(),
-            Either::Right(b) => b.multi_fold_2(),
-        }
-    }
-}
-
-impl<A,B,C> MultiFoldable4 for Either<B,C>
-where
-    B:MultiFoldable3<Result = A>,
-    C:MultiFoldable3<Result = A>,
-
-{
-    type Result = A;
-    fn multi_fold_4(self) -> A {
-        match self {
-            Either::Left(a) => a.multi_fold_3(),
-            Either::Right(b) => b.multi_fold_3(),
-        }
-    }
-}
-
-impl<A,B,C> MultiFoldable5 for Either<B,C>
-where
-    B:MultiFoldable4<Result = A>,
-    C:MultiFoldable4<Result = A>,
-
-{
-    type Result = A;
-    fn multi_fold_5(self) -> A {
-        match self {
-            Either::Left(a) => a.multi_fold_4(),
-            Either::Right(b) => b.multi_fold_4(),
-        }
-    }
-}
-
-
-impl<A,B,C,D> MultiFoldable1 for Either3<B,C,D>
-where
-    B:Foldable<Result = A>,
-    C:Foldable<Result = A>,
-    D:Foldable<Result = A>,
-
-{
-    type Result = A;
-    fn multi_fold_1(self) -> A {
-        match self {
-            Either3::Left(a) => a.fold(),
-            Either3::Middle(b) => b.fold(),
-            Either3::Right(c) => c.fold(),
-        }
-    }
-}
-
-impl<A,B,C,D> MultiFoldable2 for Either3<B,C,D>
-where
-    B:MultiFoldable1<Result = A>,
-    C:MultiFoldable1<Result = A>,
-    D:MultiFoldable1<Result = A>,
-
-{
-    type Result = A;
-    fn multi_fold_2(self) -> A {
-        match self {
-            Either3::Left(a) => a.multi_fold_1(),
-            Either3::Middle(b) => b.multi_fold_1(),
-            Either3::Right(c) => c.multi_fold_1(),
-        }
-    }
-}
-
-impl<A,B,C,D> MultiFoldable3 for Either3<B,C,D>
-where
-    B:MultiFoldable2<Result = A>,
-    C:MultiFoldable2<Result = A>,
-    D:MultiFoldable2<Result = A>,
-
-{
-    type Result = A;
-    fn multi_fold_3(self) -> A {
-        match self {
-            Either3::Left(a) => a.multi_fold_2(),
-            Either3::Middle(b) => b.multi_fold_2(),
-            Either3::Right(c) => c.multi_fold_2(),
-        }
-    }
-}
-
-impl<A,B,C,D> MultiFoldable4 for Either3<B,C,D>
-where
-    B:MultiFoldable3<Result = A>,
-    C:MultiFoldable3<Result = A>,
-    D:MultiFoldable3<Result = A>,
-
-{
-    type Result = A;
-    fn multi_fold_4(self) -> A {
-        match self {
-            Either3::Left(a) => a.multi_fold_3(),
-            Either3::Middle(b) => b.multi_fold_3(),
-            Either3::Right(c) => c.multi_fold_3(),
-        }
-    }
-}
-
-impl<A,B,C,D> MultiFoldable5 for Either3<B,C,D>
-where
-    B:MultiFoldable4<Result = A>,
-    C:MultiFoldable4<Result = A>,
-    D:MultiFoldable4<Result = A>,
-
-{
-    type Result = A;
-    fn multi_fold_5(self) -> A {
-        match self {
-            Either3::Left(a) => a.multi_fold_4(),
-            Either3::Middle(b) => b.multi_fold_4(),
-            Either3::Right(c) => c.multi_fold_4(),
-        }
-    }
-}
-
-
-impl<A,B,C,D,E> MultiFoldable1 for Either4<B,C,D,E>
-where
-    B:Foldable<Result = A>,
-    C:Foldable<Result = A>,
-    D:Foldable<Result = A>,
-    E:Foldable<Result = A>,
-
-{
-    type Result = A;
-    fn multi_fold_1(self) -> A {
-        match self {
-            Either4::_1(a) => a.fold(),
-            Either4::_2(a) => a.fold(),
-            Either4::_3(a) => a.fold(),
-            Either4::_4(a) => a.fold(),
-        }
-    }
-}
-
-impl<A,B,C,D,E> MultiFoldable2 for Either4<B,C,D,E>
-where
-    B:MultiFoldable1<Result = A>,
-    C:MultiFoldable1<Result = A>,
-    D:MultiFoldable1<Result = A>,
-    E:MultiFoldable1<Result = A>,
-
-{
-    type Result = A;
-    fn multi_fold_2(self) -> A {
-        match self {
-            Either4::_1(a) => a.multi_fold_1(),
-            Either4::_2(a) => a.multi_fold_1(),
-            Either4::_3(a) => a.multi_fold_1(),
-            Either4::_4(a) => a.multi_fold_1(),
-        }
-    }
-}
-
-impl<A,B,C,D,E> MultiFoldable3 for Either4<B,C,D,E>
-where
-    B:MultiFoldable2<Result = A>,
-    C:MultiFoldable2<Result = A>,
-    D:MultiFoldable2<Result = A>,
-    E:MultiFoldable2<Result = A>,
-
-{
-    type Result = A;
-    fn multi_fold_3(self) -> A {
-        match self {
-            Either4::_1(a) => a.multi_fold_2(),
-            Either4::_2(a) => a.multi_fold_2(),
-            Either4::_3(a) => a.multi_fold_2(),
-            Either4::_4(a) => a.multi_fold_2(),
-        }
-    }
-}
-
-impl<A,B,C,D,E> MultiFoldable4 for Either4<B,C,D,E>
-where
-    B:MultiFoldable3<Result = A>,
-    C:MultiFoldable3<Result = A>,
-    D:MultiFoldable3<Result = A>,
-    E:MultiFoldable3<Result = A>,
-{
-    type Result = A;
-    fn multi_fold_4(self) -> A {
-        match self {
-            Either4::_1(a) => a.multi_fold_3(),
-            Either4::_2(a) => a.multi_fold_3(),
-            Either4::_3(a) => a.multi_fold_3(),
-            Either4::_4(a) => a.multi_fold_3(),
-        }
-    }
-}
-
-impl<A,B,C,D,E> MultiFoldable5 for Either4<B,C,D,E>
-where
-    B:MultiFoldable4<Result = A>,
-    C:MultiFoldable4<Result = A>,
-    D:MultiFoldable4<Result = A>,
-    E:MultiFoldable4<Result = A>,
-{
-    type Result = A;
-    fn multi_fold_5(self) -> A {
-        match self {
-            Either4::_1(a) => a.multi_fold_4(),
-            Either4::_2(a) => a.multi_fold_4(),
-            Either4::_3(a) => a.multi_fold_4(),
-            Either4::_4(a) => a.multi_fold_4(),
-        }
-    }
-}
-
-
-impl<A,B,C,D,E,F> MultiFoldable1 for Either5<B,C,D,E,F>
-where
-    B:Foldable<Result = A>,
-    C:Foldable<Result = A>,
-    D:Foldable<Result = A>,
-    E:Foldable<Result = A>,
-    F:Foldable<Result = A>,
-
-{
-    type Result = A;
-    fn multi_fold_1(self) -> A {
-        match self {
-            Either5::_1(a) => a.fold(),
-            Either5::_2(a) => a.fold(),
-            Either5::_3(a) => a.fold(),
-            Either5::_4(a) => a.fold(),
-            Either5::_5(a) => a.fold(),
-        }
-    }
-}
-
-impl<A,B,C,D,E,F> MultiFoldable2 for Either5<B,C,D,E,F>
-where
-    B:MultiFoldable1<Result = A>,
-    C:MultiFoldable1<Result = A>,
-    D:MultiFoldable1<Result = A>,
-    E:MultiFoldable1<Result = A>,
-    F:MultiFoldable1<Result = A>,
-
-{
-    type Result = A;
-    fn multi_fold_2(self) -> A {
-        match self {
-            Either5::_1(a) => a.multi_fold_1(),
-            Either5::_2(a) => a.multi_fold_1(),
-            Either5::_3(a) => a.multi_fold_1(),
-            Either5::_4(a) => a.multi_fold_1(),
-            Either5::_5(a) => a.multi_fold_1(),
-        }
-    }
-}
-
-impl<A,B,C,D,E,F> MultiFoldable3 for Either5<B,C,D,E,F>
-where
-    B:MultiFoldable2<Result = A>,
-    C:MultiFoldable2<Result = A>,
-    D:MultiFoldable2<Result = A>,
-    E:MultiFoldable2<Result = A>,
-    F:MultiFoldable2<Result = A>,
-
-{
-    type Result = A;
-    fn multi_fold_3(self) -> A {
-        match self {
-            Either5::_1(a) => a.multi_fold_2(),
-            Either5::_2(a) => a.multi_fold_2(),
-            Either5::_3(a) => a.multi_fold_2(),
-            Either5::_4(a) => a.multi_fold_2(),
-            Either5::_5(a) => a.multi_fold_2(),
-        }
-    }
-}
-
-impl<A,B,C,D,E,F> MultiFoldable4 for Either5<B,C,D,E,F>
-where
-    B:MultiFoldable3<Result = A>,
-    C:MultiFoldable3<Result = A>,
-    D:MultiFoldable3<Result = A>,
-    E:MultiFoldable3<Result = A>,
-    F:MultiFoldable3<Result = A>,
-
-{
-    type Result = A;
-    fn multi_fold_4(self) -> A {
-        match self {
-            Either5::_1(a) => a.multi_fold_3(),
-            Either5::_2(a) => a.multi_fold_3(),
-            Either5::_3(a) => a.multi_fold_3(),
-            Either5::_4(a) => a.multi_fold_3(),
-            Either5::_5(a) => a.multi_fold_3(),
-        }
-    }
-}
-
-impl<A,B,C,D,E,F> MultiFoldable5 for Either5<B,C,D,E,F>
-where
-    B:MultiFoldable4<Result = A>,
-    C:MultiFoldable4<Result = A>,
-    D:MultiFoldable4<Result = A>,
-    E:MultiFoldable4<Result = A>,
-    F:MultiFoldable4<Result = A>,
-
-{
-    type Result = A;
-    fn multi_fold_5(self) -> A {
-        match self {
-            Either5::_1(a) => a.multi_fold_4(),
-            Either5::_2(a) => a.multi_fold_4(),
-            Either5::_3(a) => a.multi_fold_4(),
-            Either5::_4(a) => a.multi_fold_4(),
-            Either5::_5(a) => a.multi_fold_4(),
-        }
-    }
-}
-
-
-
-impl<A,B,C,D,E,F,G> MultiFoldable1 for Either6<B,C,D,E,F,G>
-where
-    B:Foldable<Result = A>,
-    C:Foldable<Result = A>,
-    D:Foldable<Result = A>,
-    E:Foldable<Result = A>,
-    F:Foldable<Result = A>,
-    G:Foldable<Result = A>,
-
-{
-    type Result = A;
-    fn multi_fold_1(self) -> A {
-        match self {
-            Either6::_1(a) => a.fold(),
-            Either6::_2(a) => a.fold(),
-            Either6::_3(a) => a.fold(),
-            Either6::_4(a) => a.fold(),
-            Either6::_5(a) => a.fold(),
-            Either6::_6(a) => a.fold(),
-        }
-    }
-}
-
-impl<A,B,C,D,E,F,G> MultiFoldable2 for Either6<B,C,D,E,F,G>
-where
-    B:MultiFoldable1<Result = A>,
-    C:MultiFoldable1<Result = A>,
-    D:MultiFoldable1<Result = A>,
-    E:MultiFoldable1<Result = A>,
-    F:MultiFoldable1<Result = A>,
-    G:MultiFoldable1<Result = A>,
-
-{
-    type Result = A;
-    fn multi_fold_2(self) -> A {
-        match self {
-            Either6::_1(a) => a.multi_fold_1(),
-            Either6::_2(a) => a.multi_fold_1(),
-            Either6::_3(a) => a.multi_fold_1(),
-            Either6::_4(a) => a.multi_fold_1(),
-            Either6::_5(a) => a.multi_fold_1(),
-            Either6::_6(a) => a.multi_fold_1(),
-        }
-    }
-}
-
-impl<A,B,C,D,E,F,G> MultiFoldable3 for Either6<B,C,D,E,F,G>
-where
-    B:MultiFoldable2<Result = A>,
-    C:MultiFoldable2<Result = A>,
-    D:MultiFoldable2<Result = A>,
-    E:MultiFoldable2<Result = A>,
-    F:MultiFoldable2<Result = A>,
-    G:MultiFoldable2<Result = A>,
-
-{
-    type Result = A;
-    fn multi_fold_3(self) -> A {
-        match self {
-            Either6::_1(a) => a.multi_fold_2(),
-            Either6::_2(a) => a.multi_fold_2(),
-            Either6::_3(a) => a.multi_fold_2(),
-            Either6::_4(a) => a.multi_fold_2(),
-            Either6::_5(a) => a.multi_fold_2(),
-            Either6::_6(a) => a.multi_fold_2(),
-        }
-    }
-}
-
-impl<A,B,C,D,E,F,G> MultiFoldable4 for Either6<B,C,D,E,F,G>
-where
-    B:MultiFoldable3<Result = A>,
-    C:MultiFoldable3<Result = A>,
-    D:MultiFoldable3<Result = A>,
-    E:MultiFoldable3<Result = A>,
-    F:MultiFoldable3<Result = A>,
-    G:MultiFoldable3<Result = A>,
-
-{
-    type Result = A;
-    fn multi_fold_4(self) -> A {
-        match self {
-            Either6::_1(a) => a.multi_fold_3(),
-            Either6::_2(a) => a.multi_fold_3(),
-            Either6::_3(a) => a.multi_fold_3(),
-            Either6::_4(a) => a.multi_fold_3(),
-            Either6::_5(a) => a.multi_fold_3(),
-            Either6::_6(a) => a.multi_fold_3(),
-        }
-    }
-}
-
-impl<A,B,C,D,E,F,G> MultiFoldable5 for Either6<B,C,D,E,F,G>
-where
-    B:MultiFoldable4<Result = A>,
-    C:MultiFoldable4<Result = A>,
-    D:MultiFoldable4<Result = A>,
-    E:MultiFoldable4<Result = A>,
-    F:MultiFoldable4<Result = A>,
-    G:MultiFoldable4<Result = A>,
-
-{
-    type Result = A;
-    fn multi_fold_5(self) -> A {
-        match self {
-            Either6::_1(a) => a.multi_fold_4(),
-            Either6::_2(a) => a.multi_fold_4(),
-            Either6::_3(a) => a.multi_fold_4(),
-            Either6::_4(a) => a.multi_fold_4(),
-            Either6::_5(a) => a.multi_fold_4(),
-            Either6::_6(a) => a.multi_fold_4(),
-        }
-    }
-}
-
-
-impl<A,B,C,D,E,F,G, H> MultiFoldable1 for Either7<B,C,D,E,F,G, H>
-where
-    B:Foldable<Result = A>,
-    C:Foldable<Result = A>,
-    D:Foldable<Result = A>,
-    E:Foldable<Result = A>,
-    F:Foldable<Result = A>,
-    G:Foldable<Result = A>,
-    H:Foldable<Result = A>,
-
-{
-    type Result = A;
-    fn multi_fold_1(self) -> A {
-        match self {
-            Either7::_1(a) => a.fold(),
-            Either7::_2(a) => a.fold(),
-            Either7::_3(a) => a.fold(),
-            Either7::_4(a) => a.fold(),
-            Either7::_5(a) => a.fold(),
-            Either7::_6(a) => a.fold(),
-            Either7::_7(a) => a.fold(),
-        }
-    }
-}
-
-impl<A,B,C,D,E,F,G, H> MultiFoldable2 for Either7<B,C,D,E,F,G, H>
-where
-    B:MultiFoldable1<Result = A>,
-    C:MultiFoldable1<Result = A>,
-    D:MultiFoldable1<Result = A>,
-    E:MultiFoldable1<Result = A>,
-    F:MultiFoldable1<Result = A>,
-    G:MultiFoldable1<Result = A>,
-    H:MultiFoldable1<Result = A>,
-
-{
-    type Result = A;
-    fn multi_fold_2(self) -> A {
-        match self {
-            Either7::_1(a) => a.multi_fold_1(),
-            Either7::_2(a) => a.multi_fold_1(),
-            Either7::_3(a) => a.multi_fold_1(),
-            Either7::_4(a) => a.multi_fold_1(),
-            Either7::_5(a) => a.multi_fold_1(),
-            Either7::_6(a) => a.multi_fold_1(),
-            Either7::_7(a) => a.multi_fold_1(),
-        }
-    }
-}
-
-impl<A,B,C,D,E,F,G, H> MultiFoldable3 for Either7<B,C,D,E,F,G, H>
-where
-    B:MultiFoldable2<Result = A>,
-    C:MultiFoldable2<Result = A>,
-    D:MultiFoldable2<Result = A>,
-    E:MultiFoldable2<Result = A>,
-    F:MultiFoldable2<Result = A>,
-    G:MultiFoldable2<Result = A>,
-    H:MultiFoldable2<Result = A>,
-
-{
-    type Result = A;
-    fn multi_fold_3(self) -> A {
-        match self {
-            Either7::_1(a) => a.multi_fold_2(),
-            Either7::_2(a) => a.multi_fold_2(),
-            Either7::_3(a) => a.multi_fold_2(),
-            Either7::_4(a) => a.multi_fold_2(),
-            Either7::_5(a) => a.multi_fold_2(),
-            Either7::_6(a) => a.multi_fold_2(),
-            Either7::_7(a) => a.multi_fold_2(),
-        }
-    }
-}
-
-impl<A,B,C,D,E,F,G, H> MultiFoldable4 for Either7<B,C,D,E,F,G, H>
-where
-    B:MultiFoldable3<Result = A>,
-    C:MultiFoldable3<Result = A>,
-    D:MultiFoldable3<Result = A>,
-    E:MultiFoldable3<Result = A>,
-    F:MultiFoldable3<Result = A>,
-    G:MultiFoldable3<Result = A>,
-    H:MultiFoldable3<Result = A>,
-
-{
-    type Result = A;
-    fn multi_fold_4(self) -> A {
-        match self {
-            Either7::_1(a) => a.multi_fold_3(),
-            Either7::_2(a) => a.multi_fold_3(),
-            Either7::_3(a) => a.multi_fold_3(),
-            Either7::_4(a) => a.multi_fold_3(),
-            Either7::_5(a) => a.multi_fold_3(),
-            Either7::_6(a) => a.multi_fold_3(),
-            Either7::_7(a) => a.multi_fold_3(),
-        }
-    }
-}
-
-impl<A,B,C,D,E,F,G, H> MultiFoldable5 for Either7<B,C,D,E,F,G, H>
-where
-    B:MultiFoldable4<Result = A>,
-    C:MultiFoldable4<Result = A>,
-    D:MultiFoldable4<Result = A>,
-    E:MultiFoldable4<Result = A>,
-    F:MultiFoldable4<Result = A>,
-    G:MultiFoldable4<Result = A>,
-    H:MultiFoldable4<Result = A>,
-
-{
-    type Result = A;
-    fn multi_fold_5(self) -> A {
-        match self {
-            Either7::_1(a) => a.multi_fold_4(),
-            Either7::_2(a) => a.multi_fold_4(),
-            Either7::_3(a) => a.multi_fold_4(),
-            Either7::_4(a) => a.multi_fold_4(),
-            Either7::_5(a) => a.multi_fold_4(),
-            Either7::_6(a) => a.multi_fold_4(),
-            Either7::_7(a) => a.multi_fold_4(),
-        }
-    }
-}
-
-
-
-
-
-
-impl<A,B,C,D,E,F,G, H, J> MultiFoldable1 for Either8<B,C,D,E,F,G, H, J>
-where
-    B:Foldable<Result = A>,
-    C:Foldable<Result = A>,
-    D:Foldable<Result = A>,
-    E:Foldable<Result = A>,
-    F:Foldable<Result = A>,
-    G:Foldable<Result = A>,
-    H:Foldable<Result = A>,
-    J:Foldable<Result = A>,
-
-{
-    type Result = A;
-    fn multi_fold_1(self) -> A {
-        match self {
-            Either8::_1(a) => a.fold(),
-            Either8::_2(a) => a.fold(),
-            Either8::_3(a) => a.fold(),
-            Either8::_4(a) => a.fold(),
-            Either8::_5(a) => a.fold(),
-            Either8::_6(a) => a.fold(),
-            Either8::_7(a) => a.fold(),
-            Either8::_8(a) => a.fold(),
-        }
-    }
-}
-
-impl<A,B,C,D,E,F,G, H, J> MultiFoldable2 for Either8<B,C,D,E,F,G, H, J>
-where
-    B:MultiFoldable1<Result = A>,
-    C:MultiFoldable1<Result = A>,
-    D:MultiFoldable1<Result = A>,
-    E:MultiFoldable1<Result = A>,
-    F:MultiFoldable1<Result = A>,
-    G:MultiFoldable1<Result = A>,
-    H:MultiFoldable1<Result = A>,
-    J:MultiFoldable1<Result = A>,
-
-{
-    type Result = A;
-    fn multi_fold_2(self) -> A {
-        match self {
-            Either8::_1(a) => a.multi_fold_1(),
-            Either8::_2(a) => a.multi_fold_1(),
-            Either8::_3(a) => a.multi_fold_1(),
-            Either8::_4(a) => a.multi_fold_1(),
-            Either8::_5(a) => a.multi_fold_1(),
-            Either8::_6(a) => a.multi_fold_1(),
-            Either8::_7(a) => a.multi_fold_1(),
-            Either8::_8(a) => a.multi_fold_1(),
-        }
-    }
-}
-
-impl<A,B,C,D,E,F,G, H, J> MultiFoldable3 for Either8<B,C,D,E,F,G, H, J>
-where
-    B:MultiFoldable2<Result = A>,
-    C:MultiFoldable2<Result = A>,
-    D:MultiFoldable2<Result = A>,
-    E:MultiFoldable2<Result = A>,
-    F:MultiFoldable2<Result = A>,
-    G:MultiFoldable2<Result = A>,
-    H:MultiFoldable2<Result = A>,
-    J:MultiFoldable2<Result = A>,
-
-{
-    type Result = A;
-    fn multi_fold_3(self) -> A {
-        match self {
-            Either8::_1(a) => a.multi_fold_2(),
-            Either8::_2(a) => a.multi_fold_2(),
-            Either8::_3(a) => a.multi_fold_2(),
-            Either8::_4(a) => a.multi_fold_2(),
-            Either8::_5(a) => a.multi_fold_2(),
-            Either8::_6(a) => a.multi_fold_2(),
-            Either8::_7(a) => a.multi_fold_2(),
-            Either8::_8(a) => a.multi_fold_2(),
-        }
-    }
-}
-
-impl<A,B,C,D,E,F,G, H, J> MultiFoldable4 for Either8<B,C,D,E,F,G, H, J>
-where
-    B:MultiFoldable3<Result = A>,
-    C:MultiFoldable3<Result = A>,
-    D:MultiFoldable3<Result = A>,
-    E:MultiFoldable3<Result = A>,
-    F:MultiFoldable3<Result = A>,
-    G:MultiFoldable3<Result = A>,
-    H:MultiFoldable3<Result = A>,
-    J:MultiFoldable3<Result = A>,
-
-{
-    type Result = A;
-    fn multi_fold_4(self) -> A {
-        match self {
-            Either8::_1(a) => a.multi_fold_3(),
-            Either8::_2(a) => a.multi_fold_3(),
-            Either8::_3(a) => a.multi_fold_3(),
-            Either8::_4(a) => a.multi_fold_3(),
-            Either8::_5(a) => a.multi_fold_3(),
-            Either8::_6(a) => a.multi_fold_3(),
-            Either8::_7(a) => a.multi_fold_3(),
-            Either8::_8(a) => a.multi_fold_3(),
-        }
-    }
-}
-
-impl<A,B,C,D,E,F,G, H, J> MultiFoldable5 for Either8<B,C,D,E,F,G, H, J>
-where
-    B:MultiFoldable4<Result = A>,
-    C:MultiFoldable4<Result = A>,
-    D:MultiFoldable4<Result = A>,
-    E:MultiFoldable4<Result = A>,
-    F:MultiFoldable4<Result = A>,
-    G:MultiFoldable4<Result = A>,
-    H:MultiFoldable4<Result = A>,
-    J:MultiFoldable4<Result = A>,
-
-{
-    type Result = A;
-    fn multi_fold_5(self) -> A {
-        match self {
-            Either8::_1(a) => a.multi_fold_4(),
-            Either8::_2(a) => a.multi_fold_4(),
-            Either8::_3(a) => a.multi_fold_4(),
-            Either8::_4(a) => a.multi_fold_4(),
-            Either8::_5(a) => a.multi_fold_4(),
-            Either8::_6(a) => a.multi_fold_4(),
-            Either8::_7(a) => a.multi_fold_4(),
-            Either8::_8(a) => a.multi_fold_4(),
-        }
-    }
-}
-
-
-
-
-impl<A,B,C,D,E,F,G, H, J, K> MultiFoldable1 for Either9<B,C,D,E,F,G, H, J, K>
-where
-    B:Foldable<Result = A>,
-    C:Foldable<Result = A>,
-    D:Foldable<Result = A>,
-    E:Foldable<Result = A>,
-    F:Foldable<Result = A>,
-    G:Foldable<Result = A>,
-    H:Foldable<Result = A>,
-    J:Foldable<Result = A>,
-    K:Foldable<Result = A>,
-
-{
-    type Result = A;
-    fn multi_fold_1(self) -> A {
-        match self {
-            Either9::_1(a) => a.fold(),
-            Either9::_2(a) => a.fold(),
-            Either9::_3(a) => a.fold(),
-            Either9::_4(a) => a.fold(),
-            Either9::_5(a) => a.fold(),
-            Either9::_6(a) => a.fold(),
-            Either9::_7(a) => a.fold(),
-            Either9::_8(a) => a.fold(),
-            Either9::_9(a) => a.fold(),
-        }
-    }
-}
-
-impl<A,B,C,D,E,F,G, H, J, K> MultiFoldable2 for Either9<B,C,D,E,F,G, H, J, K>
-where
-    B:MultiFoldable1<Result = A>,
-    C:MultiFoldable1<Result = A>,
-    D:MultiFoldable1<Result = A>,
-    E:MultiFoldable1<Result = A>,
-    F:MultiFoldable1<Result = A>,
-    G:MultiFoldable1<Result = A>,
-    H:MultiFoldable1<Result = A>,
-    J:MultiFoldable1<Result = A>,
-    K:MultiFoldable1<Result = A>,
-
-{
-    type Result = A;
-    fn multi_fold_2(self) -> A {
-        match self {
-            Either9::_1(a) => a.multi_fold_1(),
-            Either9::_2(a) => a.multi_fold_1(),
-            Either9::_3(a) => a.multi_fold_1(),
-            Either9::_4(a) => a.multi_fold_1(),
-            Either9::_5(a) => a.multi_fold_1(),
-            Either9::_6(a) => a.multi_fold_1(),
-            Either9::_7(a) => a.multi_fold_1(),
-            Either9::_8(a) => a.multi_fold_1(),
-            Either9::_9(a) => a.multi_fold_1(),
-        }
-    }
-}
-
-impl<A,B,C,D,E,F,G, H, J, K> MultiFoldable3 for Either9<B,C,D,E,F,G, H, J, K>
-where
-    B:MultiFoldable2<Result = A>,
-    C:MultiFoldable2<Result = A>,
-    D:MultiFoldable2<Result = A>,
-    E:MultiFoldable2<Result = A>,
-    F:MultiFoldable2<Result = A>,
-    G:MultiFoldable2<Result = A>,
-    H:MultiFoldable2<Result = A>,
-    J:MultiFoldable2<Result = A>,
-    K:MultiFoldable2<Result = A>,
-
-{
-    type Result = A;
-    fn multi_fold_3(self) -> A {
-        match self {
-            Either9::_1(a) => a.multi_fold_2(),
-            Either9::_2(a) => a.multi_fold_2(),
-            Either9::_3(a) => a.multi_fold_2(),
-            Either9::_4(a) => a.multi_fold_2(),
-            Either9::_5(a) => a.multi_fold_2(),
-            Either9::_6(a) => a.multi_fold_2(),
-            Either9::_7(a) => a.multi_fold_2(),
-            Either9::_8(a) => a.multi_fold_2(),
-            Either9::_9(a) => a.multi_fold_2(),
-        }
-    }
-}
-
-
-impl<A,B,C,D,E,F,G, H, J, K> MultiFoldable4 for Either9<B,C,D,E,F,G, H, J, K>
-where
-    B:MultiFoldable3<Result = A>,
-    C:MultiFoldable3<Result = A>,
-    D:MultiFoldable3<Result = A>,
-    E:MultiFoldable3<Result = A>,
-    F:MultiFoldable3<Result = A>,
-    G:MultiFoldable3<Result = A>,
-    H:MultiFoldable3<Result = A>,
-    J:MultiFoldable3<Result = A>,
-    K:MultiFoldable3<Result = A>,
-
-{
-    type Result = A;
-    fn multi_fold_4(self) -> A {
-        match self {
-            Either9::_1(a) => a.multi_fold_3(),
-            Either9::_2(a) => a.multi_fold_3(),
-            Either9::_3(a) => a.multi_fold_3(),
-            Either9::_4(a) => a.multi_fold_3(),
-            Either9::_5(a) => a.multi_fold_3(),
-            Either9::_6(a) => a.multi_fold_3(),
-            Either9::_7(a) => a.multi_fold_3(),
-            Either9::_8(a) => a.multi_fold_3(),
-            Either9::_9(a) => a.multi_fold_3(),
-        }
-    }
-}
-
-impl<A,B,C,D,E,F,G, H, J, K> MultiFoldable5 for Either9<B,C,D,E,F,G, H, J, K>
-where
-    B:MultiFoldable4<Result = A>,
-    C:MultiFoldable4<Result = A>,
-    D:MultiFoldable4<Result = A>,
-    E:MultiFoldable4<Result = A>,
-    F:MultiFoldable4<Result = A>,
-    G:MultiFoldable4<Result = A>,
-    H:MultiFoldable4<Result = A>,
-    J:MultiFoldable4<Result = A>,
-    K:MultiFoldable4<Result = A>,
-
-{
-    type Result = A;
-    fn multi_fold_5(self) -> A {
-        match self {
-            Either9::_1(a) => a.multi_fold_4(),
-            Either9::_2(a) => a.multi_fold_4(),
-            Either9::_3(a) => a.multi_fold_4(),
-            Either9::_4(a) => a.multi_fold_4(),
-            Either9::_5(a) => a.multi_fold_4(),
-            Either9::_6(a) => a.multi_fold_4(),
-            Either9::_7(a) => a.multi_fold_4(),
-            Either9::_8(a) => a.multi_fold_4(),
-            Either9::_9(a) => a.multi_fold_4(),
-        }
-    }
-}
-
-
-
-impl<A,B,C,D,E,F,G, H, J, K, L> MultiFoldable1 for Either10<B,C,D,E,F,G, H, J, K, L>
-where
-    B:Foldable<Result = A>,
-    C:Foldable<Result = A>,
-    D:Foldable<Result = A>,
-    E:Foldable<Result = A>,
-    F:Foldable<Result = A>,
-    G:Foldable<Result = A>,
-    H:Foldable<Result = A>,
-    J:Foldable<Result = A>,
-    K:Foldable<Result = A>,
-    L:Foldable<Result = A>,
-
-{
-    type Result = A;
-    fn multi_fold_1(self) -> A {
-        match self {
-            Either10::_1(a) => a.fold(),
-            Either10::_2(a) => a.fold(),
-            Either10::_3(a) => a.fold(),
-            Either10::_4(a) => a.fold(),
-            Either10::_5(a) => a.fold(),
-            Either10::_6(a) => a.fold(),
-            Either10::_7(a) => a.fold(),
-            Either10::_8(a) => a.fold(),
-            Either10::_9(a) => a.fold(),
-            Either10::_10(a) => a.fold(),
-        }
-    }
-}
-
-
-impl<A,B,C,D,E,F,G, H, J, K, L> MultiFoldable2 for Either10<B,C,D,E,F,G, H, J, K, L>
-where
-    B:MultiFoldable1<Result = A>,
-    C:MultiFoldable1<Result = A>,
-    D:MultiFoldable1<Result = A>,
-    E:MultiFoldable1<Result = A>,
-    F:MultiFoldable1<Result = A>,
-    G:MultiFoldable1<Result = A>,
-    H:MultiFoldable1<Result = A>,
-    J:MultiFoldable1<Result = A>,
-    K:MultiFoldable1<Result = A>,
-    L:MultiFoldable1<Result = A>,
-
-{
-    type Result = A;
-    fn multi_fold_2(self) -> A {
-        match self {
-            Either10::_1(a) => a.multi_fold_1(),
-            Either10::_2(a) => a.multi_fold_1(),
-            Either10::_3(a) => a.multi_fold_1(),
-            Either10::_4(a) => a.multi_fold_1(),
-            Either10::_5(a) => a.multi_fold_1(),
-            Either10::_6(a) => a.multi_fold_1(),
-            Either10::_7(a) => a.multi_fold_1(),
-            Either10::_8(a) => a.multi_fold_1(),
-            Either10::_9(a) => a.multi_fold_1(),
-            Either10::_10(a) => a.multi_fold_1(),
-        }
-    }
-}
-
-
-impl<A,B,C,D,E,F,G, H, J, K, L> MultiFoldable3 for Either10<B,C,D,E,F,G, H, J, K, L>
-where
-    B:MultiFoldable2<Result = A>,
-    C:MultiFoldable2<Result = A>,
-    D:MultiFoldable2<Result = A>,
-    E:MultiFoldable2<Result = A>,
-    F:MultiFoldable2<Result = A>,
-    G:MultiFoldable2<Result = A>,
-    H:MultiFoldable2<Result = A>,
-    J:MultiFoldable2<Result = A>,
-    K:MultiFoldable2<Result = A>,
-    L:MultiFoldable2<Result = A>,
-
-{
-    type Result = A;
-    fn multi_fold_3(self) -> A {
-        match self {
-            Either10::_1(a) => a.multi_fold_2(),
-            Either10::_2(a) => a.multi_fold_2(),
-            Either10::_3(a) => a.multi_fold_2(),
-            Either10::_4(a) => a.multi_fold_2(),
-            Either10::_5(a) => a.multi_fold_2(),
-            Either10::_6(a) => a.multi_fold_2(),
-            Either10::_7(a) => a.multi_fold_2(),
-            Either10::_8(a) => a.multi_fold_2(),
-            Either10::_9(a) => a.multi_fold_2(),
-            Either10::_10(a) => a.multi_fold_2(),
-        }
-    }
-}
-
-impl<A,B,C,D,E,F,G, H, J, K, L> MultiFoldable4 for Either10<B,C,D,E,F,G, H, J, K, L>
-where
-    B:MultiFoldable3<Result = A>,
-    C:MultiFoldable3<Result = A>,
-    D:MultiFoldable3<Result = A>,
-    E:MultiFoldable3<Result = A>,
-    F:MultiFoldable3<Result = A>,
-    G:MultiFoldable3<Result = A>,
-    H:MultiFoldable3<Result = A>,
-    J:MultiFoldable3<Result = A>,
-    K:MultiFoldable3<Result = A>,
-    L:MultiFoldable3<Result = A>,
-
-{
-    type Result = A;
-    fn multi_fold_4(self) -> A {
-        match self {
-            Either10::_1(a) => a.multi_fold_3(),
-            Either10::_2(a) => a.multi_fold_3(),
-            Either10::_3(a) => a.multi_fold_3(),
-            Either10::_4(a) => a.multi_fold_3(),
-            Either10::_5(a) => a.multi_fold_3(),
-            Either10::_6(a) => a.multi_fold_3(),
-            Either10::_7(a) => a.multi_fold_3(),
-            Either10::_8(a) => a.multi_fold_3(),
-            Either10::_9(a) => a.multi_fold_3(),
-            Either10::_10(a) => a.multi_fold_3(),
-        }
-    }
-}
-
-
-impl<A,B,C,D,E,F,G, H, J, K, L> MultiFoldable5 for Either10<B,C,D,E,F,G, H, J, K, L>
-where
-    B:MultiFoldable4<Result = A>,
-    C:MultiFoldable4<Result = A>,
-    D:MultiFoldable4<Result = A>,
-    E:MultiFoldable4<Result = A>,
-    F:MultiFoldable4<Result = A>,
-    G:MultiFoldable4<Result = A>,
-    H:MultiFoldable4<Result = A>,
-    J:MultiFoldable4<Result = A>,
-    K:MultiFoldable4<Result = A>,
-    L:MultiFoldable4<Result = A>,
-
-{
-    type Result = A;
-    fn multi_fold_5(self) -> A {
-        match self {
-            Either10::_1(a) => a.multi_fold_4(),
-            Either10::_2(a) => a.multi_fold_4(),
-            Either10::_3(a) => a.multi_fold_4(),
-            Either10::_4(a) => a.multi_fold_4(),
-            Either10::_5(a) => a.multi_fold_4(),
-            Either10::_6(a) => a.multi_fold_4(),
-            Either10::_7(a) => a.multi_fold_4(),
-            Either10::_8(a) => a.multi_fold_4(),
-            Either10::_9(a) => a.multi_fold_4(),
-            Either10::_10(a) => a.multi_fold_4(),
-        }
-    }
-}
-
-
-
-
-
-
-/*
-/// Trait for deep folding of nested Either types.
-///
-/// This trait allows for recursively collapsing nested Either types to a common result type.
-/// It uses the Foldable trait as a base case for non-nested types.
-pub trait DeepFoldable<N> {
-    /// The result type of the deep fold operation.
-    type Result;
-
-    /// Recursively folds the value into a single result.
-    fn deep_fold(self) -> Self::Result;
-}
-
-/// Type-level Peano numbers for tracking recursion depth
-pub struct Zero;
-pub struct Succ<N>(std::marker::PhantomData<N>);
-
-
-impl<A> DeepFoldable<(Zero, Zero)> for Either<A, A>
-{
-    type Result = A;
-    
-    fn deep_fold(self) -> Self::Result {
-        self.fold()
-    }
-}
-
-impl<A, B, N> DeepFoldable<(Succ<N>, Zero)> for Either<A, B>
-where
-    A: DeepFoldable<(N, Zero),Result = B>,
-{
-    type Result = A::Result;
-    
-    fn deep_fold(self) -> Self::Result {
-        match self {
-            Either::Left(a) => a.deep_fold(),
-            Either::Right(b) => b,
-        }
-    }
-}
-
-impl<A, B, N> DeepFoldable< (Zero,Succ<N>)> for Either<A, B>
-where
-    B: DeepFoldable<(Zero, N),Result = A>,
-{
-    type Result = B::Result;
-    
-    fn deep_fold(self) -> Self::Result {
-        match self {
-            Either::Right(a) => a.deep_fold(),
-            Either::Left(b) => b,
-        }
-    }
-}
-
-impl<T,A, B, N,M> DeepFoldable< (Succ<N>,Succ<M> )> for Either<A, B>
-where
-    B: DeepFoldable<(N, M),Result = T>,
-    A: DeepFoldable<(N, M),Result = T>,
-{
-    type Result = B::Result;
-    
-    fn deep_fold(self) -> Self::Result {
-        match self {
-            Either::Right(a) => a.deep_fold(),
-            Either::Left(b) => b.deep_fold(),
-        }
-    }
-}
-
-
-impl<A> DeepFoldable<(Zero, Zero,Zero)> for Either3<A, A,A>
-{
-    type Result = A;
-    
-    fn deep_fold(self) -> Self::Result {
-        self.fold()
-    }
-}
-
-impl<A, B, N> DeepFoldable<(Succ<N>, Zero,Zero)> for Either3<A, B,B>
-where
-    A: DeepFoldable<(N, Zero,Zero),Result = B>,
-{
-    type Result = A::Result;
-    
-    fn deep_fold(self) -> Self::Result {
-        match self {
-            Either3::Left(a) => a.deep_fold(),
-            Either3::Middle(b) => b,
-            Either3::Right(b) => b,
-        }
-    }
-}
-
-impl<A, B, N> DeepFoldable<(Zero,Succ<N>,Zero)> for Either3<B,A,B>
-where
-    A: DeepFoldable<(Zero,N,Zero),Result = B>,
-{
-    type Result = A::Result;
-    
-    fn deep_fold(self) -> Self::Result {
-        match self {
-            Either3::Left(b) => b,
-            Either3::Middle(a) => a.deep_fold(),
-            Either3::Right(b) => b,
-        }
-    }
-}
-
-
-
-impl<A, B, N> DeepFoldable<(Zero,Zero,Succ<N>)> for Either3<B,B,A>
-where
-    A: DeepFoldable<(Zero,Zero,N),Result = B>,
-{
-    type Result = A::Result;
-    
-    fn deep_fold(self) -> Self::Result {
-        match self {
-            Either3::Left(b) => b,
-            Either3::Middle(b) => b,
-            Either3::Right(a) => a.deep_fold(),
-        }
-    }
-}
-
-impl<T,A, B,C, N,M,L> DeepFoldable< (Succ<N>,Succ<M>,Succ<L> )> for Either3<A, B,C>
-where
-    B: DeepFoldable<(N, M,L),Result = T>,
-    A: DeepFoldable<(N, M,L),Result = T>,
-    C: DeepFoldable<(N, M,L),Result = T>,
-{
-    type Result = B::Result;
-    
-    fn deep_fold(self) -> Self::Result {
-        match self {
-            Either3::Left(a) => a.deep_fold(),
-            Either3::Middle(b) => b.deep_fold(),
-            Either3::Right(c) => c.deep_fold(),
-        }
-    }
-}
-
-
-//TODO find a way to generalize DeepFoldable 
-*/
 /// Marker trait for sum and product types.
 pub trait SumAndProdType {}
 
@@ -2616,69 +453,35 @@ pub trait ProdType: SumAndProdType {}
 /// Marker trait for sum types.
 pub trait SumType: SumAndProdType {}
 
-// Implementations for tuple product types
-impl ProdType for () {}
-impl<T1> ProdType for (T1,) {}
-impl<T1, T2> ProdType for (T1, T2) {}
-impl<T1, T2, T3> ProdType for (T1, T2, T3) {}
-impl<T1, T2, T3, T4> ProdType for (T1, T2, T3, T4) {}
-impl<T1, T2, T3, T4, T5> ProdType for (T1, T2, T3, T4, T5) {}
-impl<T1, T2, T3, T4, T5, T6> ProdType for (T1, T2, T3, T4, T5, T6) {}
-impl<T1, T2, T3, T4, T5, T6, T7> ProdType for (T1, T2, T3, T4, T5, T6, T7) {}
-impl<T1, T2, T3, T4, T5, T6, T7, T8> ProdType for (T1, T2, T3, T4, T5, T6, T7, T8) {}
-impl<T1, T2, T3, T4, T5, T6, T7, T8, T9> ProdType for (T1, T2, T3, T4, T5, T6, T7, T8, T9) {}
-impl<T1, T2, T3, T4, T5, T6, T7, T8, T9, T10> ProdType
-    for (T1, T2, T3, T4, T5, T6, T7, T8, T9, T10)
-{
+
+macro_rules! impl_sum_type_for_either {
+    // Implementation for each Either type with the appropriate number of type parameters
+    ($($either:ident<$($T:ident),+>),*) => {
+        $(
+            impl<$($T),+> SumAndProdType for ($($T),+) {}
+            impl<$($T),+> ProdType for ($($T),+) {}
+            impl<$($T),+> SumType for $either<$($T),+> {}
+            impl<$($T),+> SumAndProdType for $either<$($T),+> {}
+        )*
+    };
 }
 
-// Implementations for tuple SumAndProdType
-impl SumAndProdType for () {}
-impl<T1> SumAndProdType for (T1,) {}
-impl<T1, T2> SumAndProdType for (T1, T2) {}
-impl<T1, T2, T3> SumAndProdType for (T1, T2, T3) {}
-impl<T1, T2, T3, T4> SumAndProdType for (T1, T2, T3, T4) {}
-impl<T1, T2, T3, T4, T5> SumAndProdType for (T1, T2, T3, T4, T5) {}
-impl<T1, T2, T3, T4, T5, T6> SumAndProdType for (T1, T2, T3, T4, T5, T6) {}
-impl<T1, T2, T3, T4, T5, T6, T7> SumAndProdType for (T1, T2, T3, T4, T5, T6, T7) {}
-impl<T1, T2, T3, T4, T5, T6, T7, T8> SumAndProdType for (T1, T2, T3, T4, T5, T6, T7, T8) {}
-impl<T1, T2, T3, T4, T5, T6, T7, T8, T9> SumAndProdType for (T1, T2, T3, T4, T5, T6, T7, T8, T9) {}
-impl<T1, T2, T3, T4, T5, T6, T7, T8, T9, T10> SumAndProdType
-    for (T1, T2, T3, T4, T5, T6, T7, T8, T9, T10)
-{
-}
+// Apply the macro for all Either types
+impl_sum_type_for_either!(
+    Either<T1, T2>,
+    Either3<T1, T2, T3>,
+    Either4<T1, T2, T3, T4>,
+    Either5<T1, T2, T3, T4, T5>,
+    Either6<T1, T2, T3, T4, T5, T6>,
+    Either7<T1, T2, T3, T4, T5, T6, T7>,
+    Either8<T1, T2, T3, T4, T5, T6, T7, T8>,
+    Either9<T1, T2, T3, T4, T5, T6, T7, T8, T9>,
+    Either10<T1, T2, T3, T4, T5, T6, T7, T8, T9, T10>
+);
 
-// Implementations for Empty SumType
 impl SumType for () {}
 impl<T1> SumType for (T1,) {}
-
-// Implementations for Either SumType
-impl<T1, T2> SumType for Either<T1, T2> {}
-impl<T1, T2, T3> SumType for Either3<T1, T2, T3> {}
-impl<T1, T2, T3, T4> SumType for Either4<T1, T2, T3, T4> {}
-impl<T1, T2, T3, T4, T5> SumType for Either5<T1, T2, T3, T4, T5> {}
-impl<T1, T2, T3, T4, T5, T6> SumType for Either6<T1, T2, T3, T4, T5, T6> {}
-impl<T1, T2, T3, T4, T5, T6, T7> SumType for Either7<T1, T2, T3, T4, T5, T6, T7> {}
-impl<T1, T2, T3, T4, T5, T6, T7, T8> SumType for Either8<T1, T2, T3, T4, T5, T6, T7, T8> {}
-impl<T1, T2, T3, T4, T5, T6, T7, T8, T9> SumType for Either9<T1, T2, T3, T4, T5, T6, T7, T8, T9> {}
-impl<T1, T2, T3, T4, T5, T6, T7, T8, T9, T10> SumType
-    for Either10<T1, T2, T3, T4, T5, T6, T7, T8, T9, T10>
-{
-}
-
-// Implementations for Either SumAndProdType
-impl<T1, T2> SumAndProdType for Either<T1, T2> {}
-impl<T1, T2, T3> SumAndProdType for Either3<T1, T2, T3> {}
-impl<T1, T2, T3, T4> SumAndProdType for Either4<T1, T2, T3, T4> {}
-impl<T1, T2, T3, T4, T5> SumAndProdType for Either5<T1, T2, T3, T4, T5> {}
-impl<T1, T2, T3, T4, T5, T6> SumAndProdType for Either6<T1, T2, T3, T4, T5, T6> {}
-impl<T1, T2, T3, T4, T5, T6, T7> SumAndProdType for Either7<T1, T2, T3, T4, T5, T6, T7> {}
-impl<T1, T2, T3, T4, T5, T6, T7, T8> SumAndProdType for Either8<T1, T2, T3, T4, T5, T6, T7, T8> {}
-impl<T1, T2, T3, T4, T5, T6, T7, T8, T9> SumAndProdType
-    for Either9<T1, T2, T3, T4, T5, T6, T7, T8, T9>
-{
-}
-impl<T1, T2, T3, T4, T5, T6, T7, T8, T9, T10> SumAndProdType
-    for Either10<T1, T2, T3, T4, T5, T6, T7, T8, T9, T10>
-{
-}
+impl SumAndProdType for () {}
+impl<T1> SumAndProdType for (T1,) {}
+impl ProdType for () {}
+impl<T1> ProdType for (T1,) {}
