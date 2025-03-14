@@ -49,7 +49,6 @@ impl<State, Input, Output, Error, P, SuccessT, ErrorT> TransitionParser<State, I
         where
         for<'a> SuccessT: FnMut(State, Input, Output, Input) -> (State, Input, Output) + 'a,
     for<'a> ErrorT: FnMut(State, Input, Error, Input) -> (State, Input, Error) + 'a,
-        
     {
         TransitionParser {
             parser,
@@ -137,12 +136,18 @@ where
 
 
 
-pub trait StatefulParser<State, Input, Output, Error>: Parser<StateCarrier<State, Input>, Output, Error> where
+pub trait StatefulParser<State:Default, Input, Output, Error>: Parser<StateCarrier<State, Input>, Output, Error> where
     Input : Parsable<Error>,
     StateCarrier<State, Input> : Parsable<Error>,
     Output : ParserOutput,
     Error : Clone,
 {
+
+    
+
+    fn underlying_parser(self)-> impl Parser<Input,Output,Error>;
+
+
     fn parse_with_state(
         &self,
         input:Input,state:State,
@@ -190,6 +195,7 @@ impl<State, Input, Output, Error, P, SuccesT, ErrorT>
     StatefulParser<State, Input, Output, Error>
     for TransitionParser<State, Input, Output, Error, P, SuccesT, ErrorT>
 where
+    State:Default,
     Error: Clone,
     Output: ParserOutput,
 StateCarrier<State, Input>: Parsable<Error>,
@@ -198,16 +204,26 @@ StateCarrier<State, Input>: Parsable<Error>,
     SuccesT: FnMut(State, Input, Output, Input) -> (State, Input, Output),
     ErrorT: FnMut(State, Input, Error, Input) -> (State, Input, Error),
 {
-    
+    fn underlying_parser(self)-> impl Parser<Input,Output,Error> {
+        self.parser
+    }
 }
 
 impl<State,Input, Output, Error, Function> StatefulParser<State,Input, Output, Error> for Function
 where
-    Function: Fn(StateCarrier<State, Input>) -> Result<(StateCarrier<State, Input>, Output), (StateCarrier<State, Input>, Error)>,
+    Function: Fn(StateCarrier<State, Input>) -> Result<(StateCarrier<State, Input>, Output), (StateCarrier<State, Input>, Error)> ,
     Input: Parsable<Error> + Clone,
     StateCarrier<State,Input> : Parsable<Error>,
     Error: Clone,
+    State:Default,
     
 {
-    
+    fn underlying_parser(self)-> impl Parser<Input,Output,Error> {
+        move |input|{
+            match self(StateCarrier::new(State::default(), input)){
+                Ok((StateCarrier { state:_, input },out)) => Ok((input,out)),
+                Err((StateCarrier { state:_, input },out)) => Err((input,out)),
+            }
+        }
+    }
 }

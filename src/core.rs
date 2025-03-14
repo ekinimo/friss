@@ -135,6 +135,7 @@ pub trait Parser<Input: Parsable<Error>, Output: ParserOutput, Error: Clone> {
 
     fn with_state_transition<State,SuccessF,FailF>(self,succes:SuccessF,fail:FailF)-> impl StatefulParser<State,Input,Output,Error>
         where
+        State:Default,
         Input : Clone,
         Self : Sized,
     for<'a> SuccessF: FnMut(State, Input, Output, Input) -> (State, Input, Output) + 'a,
@@ -146,7 +147,22 @@ pub trait Parser<Input: Parsable<Error>, Output: ParserOutput, Error: Clone> {
      
     }
 
+    /*fn with_state_transition2<State,StateF>(self,succes:StateF)-> impl StatefulParser<State,Input,Output,Error>
+    where
+        Input : Clone,
+    Self : Sized,
+    for<'a> StateF: FnMut(State, Result<(Input, Output),(Input, Error)>, Input) -> (State, Result<(Input, Output),(Input, Error)>) + 'a,
+       StateCarrier<State, Input>: Parsable<Error>,
+    {
 
+        let s = ||{}
+        //TransitionParser::new_with_success_and_fail(self,||,fail)
+        todo!()
+            
+    }*/
+
+    /*
+    We need some kind of builder here
     fn transition_on_success<State,SuccessF,FailF>(self,success:SuccessF)-> impl StatefulParser<State,Input,Output,Error>
     where
         Input : Clone,
@@ -168,6 +184,7 @@ pub trait Parser<Input: Parsable<Error>, Output: ParserOutput, Error: Clone> {
 
         TransitionParser::new_with_success_and_fail(self,|state,rest,error,_orig| (state,rest,error),fail)
     }
+    */
 
 
     /// Validates the output of the parser with a predicate.
