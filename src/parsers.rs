@@ -224,6 +224,7 @@ impl Indentation {
 
 /// Span information for tracking source positions
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[derive(Default)]
 pub struct Span {
     pub start: usize,
     pub end: usize,
@@ -250,11 +251,6 @@ impl Span {
     }
 }
 
-impl Default for Span {
-    fn default() -> Self {
-        Span { start: 0, end: 0 }
-    }
-}
 
 // Implement Parsable for StateCarrier<Offset, Input>
 impl<'a, Error: Clone> Parsable<Error> for StateCarrier<Offset, &'a str> {
@@ -747,7 +743,7 @@ pub trait WithState<S> {
     fn with_default_state(self) -> StateCarrier<S, Self> where Self: Sized, S: Default;
 }
 
-impl<'a, S> WithState<S> for &'a str {
+impl<S> WithState<S> for &str {
     fn with_state(self, state: S) -> StateCarrier<S, Self> {
         StateCarrier::new(state, self)
     }
@@ -757,7 +753,7 @@ impl<'a, S> WithState<S> for &'a str {
     }
 }
 
-impl<'a, T, S> WithState<S> for &'a [T] {
+impl<T, S> WithState<S> for &[T] {
     fn with_state(self, state: S) -> StateCarrier<S, Self> {
         StateCarrier::new(state, self)
     }

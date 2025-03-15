@@ -332,7 +332,7 @@ fn test_state_capture() {
     // Test get_current_state
     {
         let digit_parser = <&str as Parsable<&str>>::make_anything_matcher("Expected digit")
-            .validate(|c| c.is_digit(10), "Not a digit")
+            .validate(|c| c.is_ascii_digit(), "Not a digit")
             .with_state_transition(
                 |mut state: Offset, _input, output, _orig| {
                     state.increment(1);
@@ -355,7 +355,7 @@ fn test_state_capture() {
     }
     {
         let digit_parser = <&str as Parsable<&str>>::make_anything_matcher("Expected digit")
-            .validate(|c| c.is_digit(10), "Not a digit")
+            .validate(|c| c.is_ascii_digit(), "Not a digit")
             .with_state_transition(
                 |mut state: Offset, _input, output, _orig| {
                     state.increment(1);
@@ -379,7 +379,7 @@ fn test_state_capture() {
     }
     {
         let digit_parser = <&str as Parsable<&str>>::make_anything_matcher("Expected digit")
-            .validate(|c| c.is_digit(10), "Not a digit")
+            .validate(|c| c.is_ascii_digit(), "Not a digit")
             .with_state_transition(
                 |mut state: Offset, _input, output, _orig| {
                     state.increment(1);
@@ -408,7 +408,7 @@ fn test_state_capture() {
 fn test_general_bind_2() {
     // Create a stateful parser for digits
     let digit_parser = <&str as Parsable<&str>>::make_anything_matcher("Expected char")
-        .validate(|c| c.is_digit(10), "Not a digit")
+        .validate(|c| c.is_ascii_digit(), "Not a digit")
         .with_state_transition(
             |mut state: Offset, _input, output, _orig| {
                 state.increment(1);

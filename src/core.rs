@@ -750,7 +750,7 @@ pub trait Parser<Input: Parsable<Error>, Output: ParserOutput, Error: Clone> {
                     unreachable!("wtf")
                 }
             } else {
-                return Err((rest, err.clone()));
+                Err((rest, err.clone()))
             }
         }
     }
@@ -1234,13 +1234,13 @@ pub trait Parser<Input: Parsable<Error>, Output: ParserOutput, Error: Clone> {
             let first = self.parse(input.clone());
             let second = other.parse(input.clone());
 
-            let ret = match (first, second) {
+            
+            match (first, second) {
                 (Ok(a), Ok(b)) => Ok((input, (Some(a), Some(b)))),
                 (Ok(a), Err(_)) => Ok((input, (Some(a), None))),
                 (Err(_), Ok(b)) => Ok((input, (None, Some(b)))),
                 (Err((_, a)), Err((_, b))) => Err((input, (a, b))),
-            };
-            ret
+            }
         }
     }
 
