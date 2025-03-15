@@ -737,3 +737,32 @@ impl<'a, Error: Clone, T: Eq> Parsable<Error> for StateCarrier<Offset, &'a [T]> 
         }
     }
 }
+
+// Helper trait for &str and &[T] to create state carriers
+pub trait WithState<S> {
+    /// Create a new state carrier with the given state
+    fn with_state(self, state: S) -> StateCarrier<S, Self> where Self: Sized;
+    
+    /// Create a new state carrier with the default state
+    fn with_default_state(self) -> StateCarrier<S, Self> where Self: Sized, S: Default;
+}
+
+impl<'a, S> WithState<S> for &'a str {
+    fn with_state(self, state: S) -> StateCarrier<S, Self> {
+        StateCarrier::new(state, self)
+    }
+    
+    fn with_default_state(self) -> StateCarrier<S, Self> where S: Default {
+        StateCarrier::new(S::default(), self)
+    }
+}
+
+impl<'a, T, S> WithState<S> for &'a [T] {
+    fn with_state(self, state: S) -> StateCarrier<S, Self> {
+        StateCarrier::new(state, self)
+    }
+    
+    fn with_default_state(self) -> StateCarrier<S, Self> where S: Default {
+        StateCarrier::new(S::default(), self)
+    }
+}
