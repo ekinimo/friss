@@ -148,7 +148,7 @@ pub fn to_lowercase<'a, Output: Clone>(parser: impl Parser<&'a str, Output, &'a 
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::core::*;
+    
 
     #[test]
     fn test_whitespace_parsing() {
