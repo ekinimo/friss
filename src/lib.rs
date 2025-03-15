@@ -156,26 +156,39 @@
 pub use crate::core::{fail, pure, recursive, Parsable, ParsableItem, Parser};
 pub use crate::sugar::*;
 pub use crate::types::*;
-
+pub use crate::state::*;
 // Module declarations
 pub mod combinators;
 pub mod core;
 pub mod parsers;
 pub mod sugar;
 pub mod types;
+pub mod state;
+
+
+//TODO document
+// or
+// other many stuff
+// stateful parsers / builtin statefull parsers
+// either functionalities (map fold etc)
+
 
 //TODO reconsider
-pub mod state;
-pub mod memo;
-pub mod lexer;
+pub mod lexer /*integrate with stateful parsers and builtin states*/;
 
 //TODO implement
+pub mod memo; /*memoize parsers based on input and  packrat parsers using state*/
+pub mod context; /*contextual parsers*/
 pub mod pratt; /* Pratt parser with pre/in/pos/mix-fix precedence*/
 pub mod grammar; /* Grammar builder: api
 
 let mut builder = GrammarBuilder::new();
 let ident = builder.production("identifier"); let expr = builder.production("expr");
  *expr =  ident + "(" expr &  expr  ")" + "lambda"  &  ident & "->" & expr *
+ let p = builder.finalize();
+ let ret = p.parse();
+
+grammar ops
 & for seq
 + for alt
 | for or
@@ -193,13 +206,12 @@ usual .methods */
 
 
 //TODO
-// macrofy repeated impls
 // create non const versions of AtLeastNParser etc.
 // If no error then return () as err and implement decrement for Eithers
-// DeepFoldable should be implemented
 // map_1 .. etc should be implemented for tuples as well
 // remove seperate traits like SeqParser, AltParser
 // move stuff to extension traits
-
+// macrofy repeated impls
+// feature flag for regexp
 #[cfg(test)]
 pub mod tests;

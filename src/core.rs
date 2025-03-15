@@ -27,8 +27,11 @@
 //!
 //! assert_eq!(combined.parse("123"), Ok(("3", "12".to_string())));
 //! ```
+use crate::{
+    state::{ ParserWithStateTransition, StateCarrier, StatefulParser},
+    types::*,
+};
 use std::cell::RefCell;
-use crate::{state::{ParserWithStateTransition, StateCarrier,  StatefulParser}, types::*};
 
 /// Trait for items within a `Parsable` type.
 ///
@@ -131,20 +134,59 @@ pub trait Parser<Input: Parsable<Error>, Output: ParserOutput, Error: Clone> {
     /// ```
     fn parse(&self, input: Input) -> Result<(Input, Output), (Input, Error)>;
 
-
-
-    fn with_state_transition<State,SuccessF,FailF>(self,succes:SuccessF,fail:FailF)-> impl StatefulParser<State,Input,Output,Error>
-        where
-        State:Default,
-    Input : Clone ,
-        Self : Sized,
-    for<'a> SuccessF: FnMut(State, Input, Output, Input) -> (State, Input, Output) + 'a,
-    for<'a> FailF: FnMut(State, Input, Error, Input) -> (State, Input, Error) + 'a,
-    StateCarrier<State, Input>: Parsable<Error>,
+    /// Creates a stateful parser by adding state transition handling.
+    ///
+    /// This method transforms a regular parser into a stateful parser that can
+    /// track and modify state during parsing. The state transitions are defined
+    /// by the provided success and failure handler functions.
+    ///
+    /// # Type Parameters
+    ///
+    /// * `State`: The state type to track (must implement `Default`)
+    /// * `SuccessF`: Function type for handling successful parse results
+    /// * `FailF`: Function type for handling parse failures
+    ///
+    /// # Parameters
+    ///
+    /// * `success`: Handler function called when parsing succeeds. It receives the current state,
+    ///   remaining input, output value, and original input, and should return an updated state,
+    ///   possibly modified input, and possibly modified output.
+    /// * `fail`: Handler function called when parsing fails. Similar to `success`, but for error cases.
+    ///
+    /// # Returns
+    ///
+    /// A new parser that implements the `StatefulParser` trait, tracking state during parsing.
+    ///
+    /// # Examples
+    ///
+    /// ```rust
+    /// use friss::*;
+    /// use friss::parsers::*;
+    ///
+    /// // Create a parser that counts characters
+    /// let char_counter = <&str as Parsable<&str>>::make_anything_matcher("Expected char")
+    ///     .with_state_transition(
+    ///         |mut offset: Offset, input, output, _orig| {
+    ///             offset.increment(1);
+    ///             (offset, input, output)
+    ///         },
+    ///         |offset, input, error, _orig| (offset, input, error)
+    ///     );
+    /// ```
+    fn with_state_transition<State, SuccessF, FailF>(
+        self,
+        succes: SuccessF,
+        fail: FailF,
+    ) -> impl StatefulParser<State, Input, Output, Error>
+    where
+        State: Default,
+        Input: Clone,
+        Self: Sized,
+        for<'a> SuccessF: FnMut(State, Input, Output, Input) -> (State, Input, Output) + 'a,
+        for<'a> FailF: FnMut(State, Input, Error, Input) -> (State, Input, Error) + 'a,
+        StateCarrier<State, Input>: Parsable<Error>,
     {
-
-        ParserWithStateTransition::new_with_success_and_fail(self,succes,fail)
-     
+        ParserWithStateTransition::new_with_success_and_fail(self, succes, fail)
     }
 
     /*fn with_state_transition2<State,StateF>(self,succes:StateF)-> impl StatefulParser<State,Input,Output,Error>
@@ -158,7 +200,7 @@ pub trait Parser<Input: Parsable<Error>, Output: ParserOutput, Error: Clone> {
         let s = ||{}
         //TransitionParser::new_with_success_and_fail(self,||,fail)
         todo!()
-            
+
     }*/
 
     /*
@@ -185,7 +227,6 @@ pub trait Parser<Input: Parsable<Error>, Output: ParserOutput, Error: Clone> {
         TransitionParser::new_with_success_and_fail(self,|state,rest,error,_orig| (state,rest,error),fail)
     }
     */
-
 
     /// Validates the output of the parser with a predicate.
     ///
@@ -302,51 +343,85 @@ pub trait Parser<Input: Parsable<Error>, Output: ParserOutput, Error: Clone> {
         }
     }
 
-
-    fn bind_output_mapping_error<Out2,Err2, BindFun,ErrMapper, Ret: Parser<Input, Out2, Err2>>(
+    fn bind_output_mapping_error<Out2, Err2, BindFun, ErrMapper, Ret: Parser<Input, Out2, Err2>>(
         self,
         bind_fun: BindFun,
         err_map: ErrMapper,
-
     ) -> impl Parser<Input, Out2, Err2>
     where
         BindFun: Fn(Output) -> Ret,
         ErrMapper: Fn(Error) -> Err2,
         Self: Sized,
-    Err2 : Clone,
-    Input : Parsable<Err2>
+        Err2: Clone,
+        Input: Parsable<Err2>,
     {
-        move |input: Input| {
-            match self.parse(input) {
-                Ok((rest,out)) => bind_fun(out).parse(rest),
-                Err((rest,err)) => Err((rest,err_map(err))),
-            }
+        move |input: Input| match self.parse(input) {
+            Ok((rest, out)) => bind_fun(out).parse(rest),
+            Err((rest, err)) => Err((rest, err_map(err))),
         }
     }
 
-    //TODO document
-    fn bind_err<Out2,Err2, BindFun,ErrFun, Ret: Parser<Input, Out2, Err2>>(
+    /// Binds the error of a parser to another parser.
+    ///
+    /// This method allows for error handling by transforming error cases into a new parser.
+    /// If the original parser fails, the provided function `f` is called with the error,
+    /// and the resulting parser is applied to the input.
+    /// If the original parser succeeds, it returns an error with the provided `err` value.
+    ///
+    /// # Example
+    ///
+    /// ```rust
+    /// use friss::*;
+    ///
+    /// let parser = "invalid".make_literal_matcher("Not valid")
+    ///     .bind_err(|err| "fallback".make_literal_matcher("Not fallback"), "Success not expected");
+    ///
+    /// assert_eq!(parser.parse("invalid"), Err(("", "Success not expected")));
+    /// assert_eq!(parser.parse("fallback"), Ok(("", "fallback")));
+    /// ```
+    fn bind_err<Out2, Err2, BindFun,  Ret: Parser<Input, Out2, Err2>>(
         self,
         f: BindFun,
-        err:Err2
+        err: Err2,
     ) -> impl Parser<Input, Out2, Err2>
     where
         BindFun: Fn(Error) -> Ret,
         Self: Sized,
-    Err2 : Clone,
-    Input : Parsable<Err2>
+        Err2: Clone,
+        Input: Parsable<Err2>,
     {
-        move |input: Input| {
-            match self.parse(input) {
-                Ok((rest,_out)) => Err((rest,err.clone())),
-                Err((rest,err)) => f(err).parse(rest),
-            }
-
+        move |input: Input| match self.parse(input) {
+            Ok((rest, _out)) => Err((rest, err.clone())),
+            Err((rest, err)) => f(err).parse(rest),
         }
     }
 
-    //TODO document also this is not general enough (stateful parsers should be able to bind with their state as well ie not enough args) 
-    fn bind<Out2,Err2, OutBind,ErrBind, Ret: Parser<Input, Out2, Err2>>(
+    /// Binds both the output and error of a parser to new parsers.
+    ///
+    /// This is a general-purpose binding operation that handles both success and error cases.
+    /// - If the original parser succeeds, `out_bind` is called with the output to produce a new parser.
+    /// - If the original parser fails, `err_bind` is called with the error to produce a new parser.
+    ///
+    /// # Example
+    ///
+    /// ```rust
+    /// use friss::*;
+    ///
+    /// let parser = "hello".make_literal_matcher("Not hello").bind(
+    ///     |_hello| " parsed world".make_literal_matcher("Not world"),
+    ///     |_err| "goodbye".make_literal_matcher("Not goodbye"),
+    /// );
+    ///
+    /// assert_eq!(
+    ///     parser.parse("hello parsed world"),
+    ///     Ok(("", " parsed world"))
+    /// );
+    /// assert_eq!(parser.parse("goodbye"), Ok(("", "goodbye")));
+    /// ```
+    ///
+    /// Note: This implementation is not fully general for stateful parsers.
+    /// To bind using state user should use `general_bind` from the `StatefulParser` trait,
+    fn bind<Out2, Err2, OutBind, ErrBind, Ret: Parser<Input, Out2, Err2>>(
         self,
         out_bind: OutBind,
         err_bind: ErrBind,
@@ -355,18 +430,14 @@ pub trait Parser<Input: Parsable<Error>, Output: ParserOutput, Error: Clone> {
         OutBind: Fn(Output) -> Ret,
         ErrBind: Fn(Error) -> Ret,
         Self: Sized,
-        Err2 : Clone,
-        Input : Parsable<Err2>
+        Err2: Clone,
+        Input: Parsable<Err2>,
     {
-        move |input: Input| {
-            match self.parse(input) {
-                Ok((rest,out)) => out_bind(out).parse(rest),
-                Err((rest,err)) => err_bind(err).parse(rest),
-            }
+        move |input: Input| match self.parse(input) {
+            Ok((rest, out)) => out_bind(out).parse(rest),
+            Err((rest, err)) => err_bind(err).parse(rest),
         }
     }
-
-
 
     /// Sequences this parser with another parser.
     ///
@@ -541,7 +612,7 @@ pub trait Parser<Input: Parsable<Error>, Output: ParserOutput, Error: Clone> {
     fn at_least_n(self, n: usize, err: Error) -> impl AtLeastNParser<Input, Output, Error>
     where
         Self: Sized,
-        Input: PartialEq ,
+        Input: PartialEq,
         Error: Clone,
     {
         move |input: Input| {
@@ -605,7 +676,10 @@ pub trait Parser<Input: Parsable<Error>, Output: ParserOutput, Error: Clone> {
                         result[N - remaining] = Some(ret);
                         remaining -= 1;
                     }
-                    Err((new_rest, _)) => { rest = new_rest;  break},
+                    Err((new_rest, _)) => {
+                        rest = new_rest;
+                        break;
+                    }
                 }
             }
             Ok((rest, Box::new(result)))
@@ -630,7 +704,7 @@ pub trait Parser<Input: Parsable<Error>, Output: ParserOutput, Error: Clone> {
     where
         Self: Sized,
         Error: Clone,
-        Input:  PartialEq,
+        Input: PartialEq,
         Output: Copy,
     {
         move |input: Input| {
@@ -644,24 +718,28 @@ pub trait Parser<Input: Parsable<Error>, Output: ParserOutput, Error: Clone> {
                     Ok((new_rest, ret)) => {
                         let is_end = end_p.parse(new_rest);
                         match is_end {
-                            Ok((new_new_rest,_)) => {
+                            Ok((new_new_rest, _)) => {
                                 rest = new_new_rest;
                                 result.push(ret);
                                 break;
-                            },
-                            Err((new_new_rest,_)) =>{
+                            }
+                            Err((new_new_rest, _)) => {
                                 rest = new_new_rest;
                                 result.push(ret);
                                 remaining -= 1;
-                            },
+                            }
                         }
                     }
-                    Err((new_rest, err)) => { rest = new_rest; maybe_err = Some(err);  break;},
+                    Err((new_rest, err)) => {
+                        rest = new_rest;
+                        maybe_err = Some(err);
+                        break;
+                    }
                 }
             }
 
-            if let Some(err) = maybe_err{
-                return Err((rest, err.clone()))
+            if let Some(err) = maybe_err {
+                return Err((rest, err.clone()));
             }
 
             if result.len() == N {
@@ -672,7 +750,7 @@ pub trait Parser<Input: Parsable<Error>, Output: ParserOutput, Error: Clone> {
                     unreachable!("wtf")
                 }
             } else {
-                return Err((rest, err.clone()))
+                return Err((rest, err.clone()));
             }
         }
     }
@@ -864,6 +942,20 @@ pub trait Parser<Input: Parsable<Error>, Output: ParserOutput, Error: Clone> {
             Ok((input, results))
         }
     }
+
+
+    /// Lifts a parser to `StatefulParser`
+    /*fn state_lift<State>(&self)-> StatefulParser<State,Input,Output,Error>{
+        move |carrier: StateCarrier<State, Input>| {
+            let state = carrier.state;
+            let input = carrier.input;
+
+            match self.parse(input) {
+                Ok((rest, output)) => Ok((StateCarrier { state, input: rest }, output)),
+                Err((rest, error)) => Err((StateCarrier { state, input: rest }, error)),
+            }
+        }
+    }*/
 
     /// Similar to `sep_by` but requires at least one item.
     ///

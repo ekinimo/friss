@@ -3,299 +3,32 @@
 //! This module contains tests for the parser combinator library.
 
 use crate::core::*;
+use crate::parsers::{Indentation, Offset, Position, WithState};
+use crate::state::{ StateCarrier, StatefulParser};
 use crate::types::*;
 use core::str;
 
 use crate::sugar::ParserSugar;
 
-
-
-
-   #[test]
-    fn test_either_simple_fold() {
-        let e1: Either<i32, i32> = Either::Left(42);
-        let e2: Either<i32, i32> = Either::Right(42);
-        
-        assert_eq!(e1.fold(), 42);
-        assert_eq!(e2.fold(), 42);
-    }
-    
-    #[test]
-    fn test_either3_simple_fold() {
-        let e1: Either3<i32, i32, i32> = Either3::Left(42);
-        let e2: Either3<i32, i32, i32> = Either3::Middle(42);
-        let e3: Either3<i32, i32, i32> = Either3::Right(42);
-        
-        assert_eq!(e1.fold(), 42);
-        assert_eq!(e2.fold(), 42);
-        assert_eq!(e3.fold(), 42);
-    }
-    /*
-
 #[test]
-fn test_eithers() {
-// Either<A, A> - base case
-let simple: Either<i32, i32> = Either::Left(5);
-let result1 = simple.deep_fold(); // Type: DeepFoldable<Zero, Zero>
-assert_eq!(result1, 5);
+fn test_either_simple_fold() {
+    let e1: Either<i32, i32> = Either::Left(42);
+    let e2: Either<i32, i32> = Either::Right(42);
 
-// Either<Either<A, A>, A> - one level of nesting on left
-let nested_left: Either<Either<i32, i32>, i32> = Either::Left(Either::Right(10));
-let result2 = nested_left.deep_fold(); // Type: DeepFoldable<Succ<Zero>, Zero>
-assert_eq!(result2, 10);
-
-// Either<A, Either<A, A>> - one level of nesting on right
-let nested_right: Either<i32, Either<i32, i32>> = Either::Right(Either::Left(15));
-let result3 = nested_right.deep_fold(); // Type: DeepFoldable<Zero, Succ<Zero>>
-assert_eq!(result3, 15);
+    assert_eq!(e1.fold(), 42);
+    assert_eq!(e2.fold(), 42);
 }
 
-    #[test]
-    fn test_either_zero_zero_deep_fold() {
-        let e1: Either<i32, i32> = Either::Left(42);
-        let e2: Either<i32, i32> = Either::Right(42);
-        
-        let result1 = DeepFoldable::<(Zero, Zero)>::deep_fold(e1);
-        let result2 = DeepFoldable::<(Zero, Zero)>::deep_fold(e2);
-        
-        assert_eq!(result1, 42);
-        assert_eq!(result2, 42);
-    }
-    
-    #[test]
-    fn test_either_succ_zero_deep_fold() {
-        // We need to explicitly specify all the types for the compiler
-        type EitherInt = Either<i32, i32>;
-        
-        // Either<Either<i32, i32>, i32>
-        let nested1: Either<EitherInt, i32> = Either::Left(Either::Left(42));
-        let nested2: Either<EitherInt, i32> = Either::Left(Either::Right(42));
-        let nested3: Either<EitherInt, i32> = Either::Right(42);
-        
-        let result1 = <Either<EitherInt, i32> as DeepFoldable<(Succ<Zero>, Zero)>>::deep_fold(nested1);
-        let result2 = <Either<EitherInt, i32> as DeepFoldable<(Succ<Zero>, Zero)>>::deep_fold(nested2);
-        let result3 = <Either<EitherInt, i32> as DeepFoldable<(Succ<Zero>, Zero)>>::deep_fold(nested3);
-        
-        assert_eq!(result1, 42);
-        assert_eq!(result2, 42);
-        assert_eq!(result3, 42);
-    }
-    
-    #[test]
-    fn test_either_zero_succ_deep_fold() {
-        // We need to explicitly specify all the types for the compiler
-        type EitherInt = Either<i32, i32>;
-        
-        // Either<i32, Either<i32, i32>>
-        let nested1: Either<i32, EitherInt> = Either::Left(42);
-        let nested2: Either<i32, EitherInt> = Either::Right(Either::Left(42));
-        let nested3: Either<i32, EitherInt> = Either::Right(Either::Right(42));
-        
-        let result1 = <Either<i32, EitherInt> as DeepFoldable<(Zero, Succ<Zero>)>>::deep_fold(nested1);
-        let result2 = <Either<i32, EitherInt> as DeepFoldable<(Zero, Succ<Zero>)>>::deep_fold(nested2);
-        let result3 = <Either<i32, EitherInt> as DeepFoldable<(Zero, Succ<Zero>)>>::deep_fold(nested3);
-        
-        assert_eq!(result1, 42);
-        assert_eq!(result2, 42);
-        assert_eq!(result3, 42);
-
-        let nested1: Either<i32, EitherInt> = Either::Left(42);
-        let nested2: Either<i32, EitherInt> = Either::Right(Either::Left(42));
-        let nested3: Either<i32, EitherInt> = Either::Right(Either::Right(42));
-
-        let result1 = nested1.deep_fold();
-        let result2 = nested2.deep_fold();
-        let result3 = nested3.deep_fold();
-        
-        assert_eq!(result1, 42);
-        assert_eq!(result2, 42);
-        assert_eq!(result3, 42);
-
-
-    }
-
-    #[test]
-    fn test_either_succ_succ_deep_fold() {
-        // We need to explicitly specify all the types for the compiler
-        type EitherInt = Either<i32, i32>;
-        
-        // Either<Either<i32, i32>, Either<i32, i32>>
-        let nested1: Either<EitherInt, EitherInt> = Either::Left(Either::Left(42));
-        let nested2: Either<EitherInt, EitherInt> = Either::Left(Either::Right(42));
-        let nested3: Either<EitherInt, EitherInt> = Either::Right(Either::Left(42));
-        let nested4: Either<EitherInt, EitherInt> = Either::Right(Either::Right(42));
-        
-        let result1 = <Either<EitherInt, EitherInt> as DeepFoldable<(Succ<Zero>, Succ<Zero>)>>::deep_fold(nested1);
-        let result2 = <Either<EitherInt, EitherInt> as DeepFoldable<(Succ<Zero>, Succ<Zero>)>>::deep_fold(nested2);
-        let result3 = <Either<EitherInt, EitherInt> as DeepFoldable<(Succ<Zero>, Succ<Zero>)>>::deep_fold(nested3);
-        let result4 = <Either<EitherInt, EitherInt> as DeepFoldable<(Succ<Zero>, Succ<Zero>)>>::deep_fold(nested4);
-        
-        assert_eq!(result1, 42);
-        assert_eq!(result2, 42);
-        assert_eq!(result3, 42);
-        assert_eq!(result4, 42);
-
-    }
-
 #[test]
-fn test_either3_deep_fold_basics() {
-    // Test basic deep_fold for Either3
+fn test_either3_simple_fold() {
     let e1: Either3<i32, i32, i32> = Either3::Left(42);
     let e2: Either3<i32, i32, i32> = Either3::Middle(42);
     let e3: Either3<i32, i32, i32> = Either3::Right(42);
-    
-    let result1 = DeepFoldable::<(Zero, Zero, Zero)>::deep_fold(e1);
-    let result2 = DeepFoldable::<(Zero, Zero, Zero)>::deep_fold(e2);
-    let result3 = DeepFoldable::<(Zero, Zero, Zero)>::deep_fold(e3);
-    
-    assert_eq!(result1, 42);
-    assert_eq!(result2, 42);
-    assert_eq!(result3, 42);
+
+    assert_eq!(e1.fold(), 42);
+    assert_eq!(e2.fold(), 42);
+    assert_eq!(e3.fold(), 42);
 }
-
-#[test]
-fn test_either3_nested_fold() {
-    // Test deep_fold with nested Either3
-    type E3Int = Either3<i32, i32, i32>;
-    
-    // Either3<Either3<i32, i32, i32>, i32, i32>
-    let nested1: Either3<E3Int, i32, i32> = Either3::Left(Either3::Left(42));
-    let nested2: Either3<E3Int, i32, i32> = Either3::Left(Either3::Middle(42));
-    let nested3: Either3<E3Int, i32, i32> = Either3::Left(Either3::Right(42));
-    let nested4: Either3<E3Int, i32, i32> = Either3::Middle(42);
-    let nested5: Either3<E3Int, i32, i32> = Either3::Right(42);
-    
-    let result1 = <Either3<E3Int, i32, i32> as DeepFoldable<(Succ<Zero>, Zero, Zero)>>::deep_fold(nested1);
-    let result2 = <Either3<E3Int, i32, i32> as DeepFoldable<(Succ<Zero>, Zero, Zero)>>::deep_fold(nested2);
-    let result3 = <Either3<E3Int, i32, i32> as DeepFoldable<(Succ<Zero>, Zero, Zero)>>::deep_fold(nested3);
-    let result4 = <Either3<E3Int, i32, i32> as DeepFoldable<(Succ<Zero>, Zero, Zero)>>::deep_fold(nested4);
-    let result5 = <Either3<E3Int, i32, i32> as DeepFoldable<(Succ<Zero>, Zero, Zero)>>::deep_fold(nested5);
-    
-    assert_eq!(result1, 42);
-    assert_eq!(result2, 42);
-    assert_eq!(result3, 42);
-    assert_eq!(result4, 42);
-    assert_eq!(result5, 42);
-}
-
-#[test]
-fn test_either3_middle_nested_fold() {
-    // Test deep_fold with nested Either3 in middle position
-    type E3Int = Either3<i32, i32, i32>;
-    
-    // Either3<i32, Either3<i32, i32, i32>, i32>
-    let nested1: Either3<i32, E3Int, i32> = Either3::Left(42);
-    let nested2: Either3<i32, E3Int, i32> = Either3::Middle(Either3::Left(42));
-    let nested3: Either3<i32, E3Int, i32> = Either3::Middle(Either3::Middle(42));
-    let nested4: Either3<i32, E3Int, i32> = Either3::Middle(Either3::Right(42));
-    let nested5: Either3<i32, E3Int, i32> = Either3::Right(42);
-    
-    let result1 = <Either3<i32, E3Int, i32> as DeepFoldable<(Zero, Succ<Zero>, Zero)>>::deep_fold(nested1);
-    let result2 = <Either3<i32, E3Int, i32> as DeepFoldable<(Zero, Succ<Zero>, Zero)>>::deep_fold(nested2);
-    let result3 = <Either3<i32, E3Int, i32> as DeepFoldable<(Zero, Succ<Zero>, Zero)>>::deep_fold(nested3);
-    let result4 = <Either3<i32, E3Int, i32> as DeepFoldable<(Zero, Succ<Zero>, Zero)>>::deep_fold(nested4);
-    let result5 = <Either3<i32, E3Int, i32> as DeepFoldable<(Zero, Succ<Zero>, Zero)>>::deep_fold(nested5);
-    
-    assert_eq!(result1, 42);
-    assert_eq!(result2, 42);
-    assert_eq!(result3, 42);
-    assert_eq!(result4, 42);
-    assert_eq!(result5, 42);
-}
-
-#[test]
-fn test_either3_right_nested_fold() {
-    // Test deep_fold with nested Either3 in right position
-    type E3Int = Either3<i32, i32, i32>;
-    
-    // Either3<i32, i32, Either3<i32, i32, i32>>
-    let nested1: Either3<i32, i32, E3Int> = Either3::Left(42);
-    let nested2: Either3<i32, i32, E3Int> = Either3::Middle(42);
-    let nested3: Either3<i32, i32, E3Int> = Either3::Right(Either3::Left(42));
-    let nested4: Either3<i32, i32, E3Int> = Either3::Right(Either3::Middle(42));
-    let nested5: Either3<i32, i32, E3Int> = Either3::Right(Either3::Right(42));
-    
-    let result1 = <Either3<i32, i32, E3Int> as DeepFoldable<(Zero, Zero, Succ<Zero>)>>::deep_fold(nested1);
-    let result2 = <Either3<i32, i32, E3Int> as DeepFoldable<(Zero, Zero, Succ<Zero>)>>::deep_fold(nested2);
-    let result3 = <Either3<i32, i32, E3Int> as DeepFoldable<(Zero, Zero, Succ<Zero>)>>::deep_fold(nested3);
-    let result4 = <Either3<i32, i32, E3Int> as DeepFoldable<(Zero, Zero, Succ<Zero>)>>::deep_fold(nested4);
-    let result5 = <Either3<i32, i32, E3Int> as DeepFoldable<(Zero, Zero, Succ<Zero>)>>::deep_fold(nested5);
-    
-    assert_eq!(result1, 42);
-    assert_eq!(result2, 42);
-    assert_eq!(result3, 42);
-    assert_eq!(result4, 42);
-    assert_eq!(result5, 42);
-}
-
-#[test]
-fn test_either3_all_nested_fold() {
-    // Test deep_fold with nested Either3 in all positions
-    type E3Int = Either3<i32, i32, i32>;
-    
-    // Either3<Either3<i32, i32, i32>, Either3<i32, i32, i32>, Either3<i32, i32, i32>>
-    let nested1: Either3<E3Int, E3Int, E3Int> = Either3::Left(Either3::Left(42));
-    let nested2: Either3<E3Int, E3Int, E3Int> = Either3::Left(Either3::Middle(42));
-    let nested3: Either3<E3Int, E3Int, E3Int> = Either3::Left(Either3::Right(42));
-    let nested4: Either3<E3Int, E3Int, E3Int> = Either3::Middle(Either3::Left(42));
-    let nested5: Either3<E3Int, E3Int, E3Int> = Either3::Middle(Either3::Middle(42));
-    let nested6: Either3<E3Int, E3Int, E3Int> = Either3::Middle(Either3::Right(42));
-    let nested7: Either3<E3Int, E3Int, E3Int> = Either3::Right(Either3::Left(42));
-    let nested8: Either3<E3Int, E3Int, E3Int> = Either3::Right(Either3::Middle(42));
-    let nested9: Either3<E3Int, E3Int, E3Int> = Either3::Right(Either3::Right(42));
-    
-    let result1 = <Either3<E3Int, E3Int, E3Int> as DeepFoldable<(Succ<Zero>, Succ<Zero>, Succ<Zero>)>>::deep_fold(nested1);
-    let result2 = <Either3<E3Int, E3Int, E3Int> as DeepFoldable<(Succ<Zero>, Succ<Zero>, Succ<Zero>)>>::deep_fold(nested2);
-    let result3 = <Either3<E3Int, E3Int, E3Int> as DeepFoldable<(Succ<Zero>, Succ<Zero>, Succ<Zero>)>>::deep_fold(nested3);
-    let result4 = <Either3<E3Int, E3Int, E3Int> as DeepFoldable<(Succ<Zero>, Succ<Zero>, Succ<Zero>)>>::deep_fold(nested4);
-    let result5 = <Either3<E3Int, E3Int, E3Int> as DeepFoldable<(Succ<Zero>, Succ<Zero>, Succ<Zero>)>>::deep_fold(nested5);
-    let result6 = <Either3<E3Int, E3Int, E3Int> as DeepFoldable<(Succ<Zero>, Succ<Zero>, Succ<Zero>)>>::deep_fold(nested6);
-    let result7 = <Either3<E3Int, E3Int, E3Int> as DeepFoldable<(Succ<Zero>, Succ<Zero>, Succ<Zero>)>>::deep_fold(nested7);
-    let result8 = <Either3<E3Int, E3Int, E3Int> as DeepFoldable<(Succ<Zero>, Succ<Zero>, Succ<Zero>)>>::deep_fold(nested8);
-    let result9 = <Either3<E3Int, E3Int, E3Int> as DeepFoldable<(Succ<Zero>, Succ<Zero>, Succ<Zero>)>>::deep_fold(nested9);
-    
-    assert_eq!(result1, 42);
-    assert_eq!(result2, 42);
-    assert_eq!(result3, 42);
-    assert_eq!(result4, 42);
-    assert_eq!(result5, 42);
-    assert_eq!(result6, 42);
-    assert_eq!(result7, 42);
-    assert_eq!(result8, 42);
-    assert_eq!(result9, 42);
-}
-
-
-
-#[test]
-fn test_either_with_string_values() {
-    // Test deep_fold with string values
-    let e1: Either<String, String> = Either::Left("hello".to_string());
-    let e2: Either<String, String> = Either::Right("world".to_string());
-    
-    let result1 = DeepFoldable::<(Zero, Zero)>::deep_fold(e1);
-    let result2 = DeepFoldable::<(Zero, Zero)>::deep_fold(e2);
-    
-    assert_eq!(result1, "hello");
-    assert_eq!(result2, "world");
-    
-    // Test nested Either with strings
-    let nested1: Either<Either<String, String>, String> = 
-        Either::Left(Either::Left("nested".to_string()));
-    let nested2: Either<Either<String, String>, String> = 
-        Either::Left(Either::Right("hello".to_string()));
-    let nested3: Either<Either<String, String>, String> = 
-        Either::Right("world".to_string());
-    
-    let result1 = <Either<Either<String, String>, String> as DeepFoldable<(Succ<Zero>, Zero)>>::deep_fold(nested1);
-    let result2 = <Either<Either<String, String>, String> as DeepFoldable<(Succ<Zero>, Zero)>>::deep_fold(nested2);
-    let result3 = <Either<Either<String, String>, String> as DeepFoldable<(Succ<Zero>, Zero)>>::deep_fold(nested3);
-    
-    assert_eq!(result1, "nested");
-    assert_eq!(result2, "hello");
-    assert_eq!(result3, "world");
-}
-*/
 
 /// Test recursively defined parsers
 #[test]
@@ -353,8 +86,6 @@ fn test_rev_apply<'a>() {
         _ => assert!(false, "Parser failed"),
     }
 }
-
-
 
 /// Test chaining parsers with and_then
 #[test]
@@ -453,7 +184,7 @@ fn test_validate() {
 
 /// Test bind parser
 #[test]
-fn test_bind() {
+fn test_bind_output() {
     let num = "123".make_literal_matcher("Not number");
     let parser = num.bind_output(|n| {
         n[0..2]
@@ -463,6 +194,293 @@ fn test_bind() {
 
     assert_eq!(parser.parse("12312"), Ok(("", "12".to_string())));
     assert_eq!(parser.parse("12"), Err(("12", "Not number")));
+}
+
+#[test]
+fn test_bind() {
+    let parser = "hello".make_literal_matcher("Not hello").bind(
+        |_hello| " parsed world".make_literal_matcher("Not world"),
+        |_err| "goodbye".make_literal_matcher("Not goodbye"),
+    );
+
+    assert_eq!(
+        parser.parse("hello parsed world"),
+        Ok(("", " parsed world"))
+    );
+    assert_eq!(parser.parse("goodbye"), Ok(("", "goodbye")));
+}
+
+#[test]
+fn test_bind_err() {
+    let parser = "invalid".make_literal_matcher("Not valid");
+    let parser = parser.bind_err(
+        move |_err| "fallback".make_literal_matcher("Not fallback"),
+        "Success not expected",
+    );
+
+    assert_eq!(parser.parse("invalid"), Err(("", "Success not expected")));
+    assert_eq!(parser.parse("fallback"), Ok(("", "fallback")));
+}
+
+#[test]
+fn test_bind_err2() {
+    // Create a parser that always fails
+    let failing_parser = "fail".make_literal_matcher("Failing parser");
+
+    // Bind the error to a parser that returns "recovered"
+    let recovery_parser = failing_parser.bind_err(
+        |_err| "recovered".make_literal_matcher("Recovery failed"),
+        "Unexpected success",
+    );
+
+    // Test that bind_err works when the first parser fails
+    assert_eq!(recovery_parser.parse("recovered"), Ok(("", "recovered")));
+
+    // Test that bind_err returns the expected error when the first parser succeeds
+    assert_eq!(
+        recovery_parser.parse("fail"),
+        Err(("", "Unexpected success"))
+    );
+}
+
+#[test]
+fn test_bind2() {
+    // Create parsers for success and error cases
+    let success_parser = "success".make_literal_matcher("Not success");
+
+    // Bind both success and error cases
+    let combined_parser = success_parser.bind(
+        |_s| "bound_success".make_literal_matcher("Bound success failed"),
+        |_e| "bound_error".make_literal_matcher("Bound error failed"),
+    );
+
+    // Test success path
+    assert_eq!(
+        combined_parser.parse("successbound_success"),
+        Ok(("", "bound_success"))
+    );
+
+    // Test error path
+    assert_eq!(
+        combined_parser.parse("bound_error"),
+        Ok(("", "bound_error"))
+    );
+}
+#[test]
+fn test_general_bind() {
+    let digit = "digit"
+        .with_state(Position::new(1, 1))
+        .make_literal_matcher("no digit");
+
+    // Use general_bind to choose the next parser based on first result
+    let p = digit.general_bind(
+        |_state, _digit| {
+            // create a new parser using state and output here
+            "haha"
+                .with_state(Position::new(1, 1))
+                .make_literal_matcher("No haha")
+        },
+        |_state, _error| {
+            // create a new parser using state and error here
+            "hehe"
+                .with_state(Position::new(1, 1))
+                .make_literal_matcher("No hehe")
+        },
+    );
+    let r1 = p.parse_with_state("digithaha", Position::new(0, 0));
+    assert_eq!(
+        r1,
+        Ok((
+            StateCarrier::new(Position { column: 9, line: 0 }, ""),
+            StateCarrier::new(Position { column: 1, line: 1 }, "haha")
+        ))
+    )
+}
+
+#[test]
+fn test_stateful_parser() {
+    // Create a parser that tracks position through the input
+    let char_parser = <&str as Parsable<&str>>::make_anything_matcher("Expected char");
+
+    // Convert to a stateful parser that increments the offset
+    let stateful = char_parser.with_state_transition(
+        |state: Offset, _input, output, _orig| {
+            let mut new_state = state;
+            new_state.increment(1);
+            (new_state, _input, output)
+        },
+        |state, input, error, _orig| (state, input, error),
+    );
+
+    // Parse with initial state
+    let input = "abc".with_state(Offset(0));
+    let result = stateful.parse(input);
+
+    // Check that the state was properly updated
+    match result {
+        Ok((rest, output)) => {
+            assert_eq!(output, 'a');
+            assert_eq!(rest.state.value(), 1);
+            assert_eq!(rest.input, "bc");
+        }
+        Err(_) => panic!("Parsing failed"),
+    }
+}
+
+#[test]
+fn test_state_capture() {
+    // Test get_current_state
+    {
+        let digit_parser = <&str as Parsable<&str>>::make_anything_matcher("Expected digit")
+            .validate(|c| c.is_digit(10), "Not a digit")
+            .with_state_transition(
+                |mut state: Offset, _input, output, _orig| {
+                    state.increment(1);
+                    (state, _input, output)
+                },
+                |state, input, error, _orig| (state, input, error),
+            );
+
+        let current_state_parser = digit_parser.get_current_state();
+        let result = current_state_parser.parse("1abc".with_state(Offset(0)));
+
+        // Check that we get the updated state
+        match result {
+            Ok((rest, state)) => {
+                assert_eq!(state.value(), 1);
+                assert_eq!(rest.input, "abc");
+            }
+            Err(_) => panic!("Parsing failed"),
+        }
+    }
+    {
+        let digit_parser = <&str as Parsable<&str>>::make_anything_matcher("Expected digit")
+            .validate(|c| c.is_digit(10), "Not a digit")
+            .with_state_transition(
+                |mut state: Offset, _input, output, _orig| {
+                    state.increment(1);
+                    (state, _input, output)
+                },
+                |state, input, error, _orig| (state, input, error),
+            );
+
+        // Test get_last_state
+        let last_state_parser = digit_parser.get_last_state();
+        let result = last_state_parser.parse("1abc".with_state(Offset(0)));
+
+        // Check that we get the original state
+        match result {
+            Ok((rest, state)) => {
+                assert_eq!(state.value(), 0);
+                assert_eq!(rest.input, "abc");
+            }
+            Err(_) => panic!("Parsing failed"),
+        }
+    }
+    {
+        let digit_parser = <&str as Parsable<&str>>::make_anything_matcher("Expected digit")
+            .validate(|c| c.is_digit(10), "Not a digit")
+            .with_state_transition(
+                |mut state: Offset, _input, output, _orig| {
+                    state.increment(1);
+                    (state, _input, output)
+                },
+                |state, input, error, _orig| (state, input, error),
+            );
+
+        // Test get_last_and_current_state
+        let both_states_parser = digit_parser.get_last_and_current_state();
+        let result = both_states_parser.parse("1abc".with_state(Offset(0)));
+
+        // Check that we get both states
+        match result {
+            Ok((rest, (last, current))) => {
+                assert_eq!(last.value(), 0);
+                assert_eq!(current.value(), 1);
+                assert_eq!(rest.input, "abc");
+            }
+            Err(_) => panic!("Parsing failed"),
+        }
+    }
+}
+
+#[test]
+fn test_general_bind_2() {
+    // Create a stateful parser for digits
+    let digit_parser = <&str as Parsable<&str>>::make_anything_matcher("Expected char")
+        .validate(|c| c.is_digit(10), "Not a digit")
+        .with_state_transition(
+            |mut state: Offset, _input, output, _orig| {
+                state.increment(1);
+                (state, _input, output)
+            },
+            |state, input, error, _orig| (state, input, error),
+        );
+
+    // Test general_bind with success case
+    let bind_parser = digit_parser.general_bind(
+        |state, digit| {
+            // On success, check if the digit is '1' and return a new parser
+            if digit == '1' {
+                "Y".with_state(Offset(0)).make_literal_matcher("No Y")
+            } else {
+                // This creates a parser that succeeds with a fixed result
+                "X".with_state(Offset(0)).make_literal_matcher("No X")
+            }
+        },
+        |_state, _error| "Z".with_state(Offset(0)).make_literal_matcher("No Z"),
+    );
+
+    // Test successful digit '1' followed by a letter
+    let result = bind_parser.parse("1Y".with_state(Offset(0)));
+    match result {
+        Ok((rest, output)) => {
+            assert_eq!(output, StateCarrier::new(Offset(0), "Y"));
+            assert_eq!(rest.state.value(), 2); // Incremented twice (once for each parser)
+            assert_eq!(rest.input, "");
+        }
+        Err(_) => panic!("Parsing failed"),
+    }
+
+    // Test successful digit '2' which returns 'X'
+    let result = bind_parser.parse("2X".with_state(Offset(0)));
+    match result {
+        Ok((rest, output)) => {
+            assert_eq!(output, StateCarrier::new(Offset(0), "X"));
+            assert_eq!(rest.state.value(), 2);
+            assert_eq!(rest.input, "");
+        }
+        Err(_) => panic!("Parsing failed"),
+    }
+
+    // Test error case which returns 'E'
+    let result = bind_parser.parse("Z".with_state(Offset(0)));
+    match result {
+        Ok((rest, output)) => {
+            assert_eq!(output, StateCarrier::new(Offset(0), "Z"));
+            assert_eq!(rest.state.value(), 1); // No increment (error handler doesn't increment)
+            assert_eq!(rest.input, "");
+        }
+        Err((sc, err)) => panic!("Parsing failed, {sc:?} {err:?}"),
+    }
+}
+
+#[test]
+fn test_state_carrier() {
+    // Create a state carrier with an Offset state
+    let carrier = "hello".with_state(Offset(5));
+
+    // Check that state and input are stored correctly
+    assert_eq!(carrier.state.value(), 5);
+    assert_eq!(carrier.input, "hello");
+
+    // Test mapping state
+    let mapped = carrier.map_state(|offset| Offset(offset.value() + 10));
+    assert_eq!(mapped.state.value(), 15);
+
+    // Test mapping input
+    let input_mapped = carrier.map_input(|s| &s[1..]);
+    assert_eq!(input_mapped.input, "ello");
 }
 
 /// Test peek parser
@@ -741,7 +759,9 @@ fn json_parser<'a>() -> impl Parser<&'a str, JsonValue, JsonError> {
             .seq()
             .map(|(_, (content, maybe_rest), _)| {
                 let mut result = vec![content];
-                if let Some(x) = maybe_rest { result.extend(x) }
+                if let Some(x) = maybe_rest {
+                    result.extend(x)
+                }
                 JsonValue::Object(result)
             })
             .map_err(|x| match x {
@@ -836,7 +856,6 @@ fn test_json_object() {
 /// Test for an expression parser that can handle basic arithmetic expressions
 mod expr_parser {
     use super::super::*;
-    
 
     /// Expression tree node
     #[derive(Debug, PartialEq, Clone)]
@@ -1090,30 +1109,165 @@ mod expr_parser {
     }
 }
 
+/// Tests positional tracking with line and column tracking
+#[test]
+fn test_position_tracking() {
+    // Create a parser that tracks line and column position
+    let char_parser = <&str as Parsable<&str>>::make_anything_matcher("Expected char")
+        .with_state_transition(
+            |mut state: Position, _input, output, _orig| {
+                // Update position based on character
+                if output == '\n' {
+                    state.advance_line();
+                } else {
+                    state.advance_column(1);
+                }
+                (state, _input, output)
+            },
+            |state, input, error, _orig| (state, input, error),
+        );
 
+    // Parse a multi-line string
+    let input = "abc\ndef\nghi".with_state(Position::new(1, 1));
 
+    // Parse characters and track position
+    let mut rest = input;
 
-
-
-mod scratch {
-    use lexer::LexerExt;
-
-    use super::super::*;
-
-    #[test]
-    fn scratch() {
-
-        //<exp>::=||<var> | fn <var> => <exp> | ( <exp> <exp> )
-        let let_p = "let".make_literal_matcher("Let").lexeme();
-
-
-        let prog = "let x = 3 in x+1;";
-        let result = let_p.parse(prog);
-
-
-        assert_eq!(dbg!(result), Ok(("x = 3 in x+1;","let")));
-
-      
+    // Parse first line
+    for _ in 0..4 {
+        // 'a', 'b', 'c', '\n'
+        let result = char_parser.parse(rest);
+        match result {
+            Ok((new_rest, _)) => {
+                rest = new_rest;
+            }
+            Err(_) => panic!("Parsing failed"),
+        }
     }
 
+    // Check position after first line
+    assert_eq!(rest.state.line, 2);
+    assert_eq!(rest.state.column, 0);
+
+    // Parse second line
+    for _ in 0..4 {
+        // 'd', 'e', 'f', '\n'
+        let result = char_parser.parse(rest);
+        match result {
+            Ok((new_rest, _)) => {
+                rest = new_rest;
+            }
+            Err(_) => panic!("Parsing failed"),
+        }
+    }
+
+    // Check position after second line
+    assert_eq!(rest.state.line, 3);
+    assert_eq!(rest.state.column, 0);
+}
+
+#[test]
+fn test_indentation_aware_parsing<'a>() {
+    // Create basic parsers for spaces and newlines
+    let space = " ".make_literal_matcher("Expected space");
+    let newline = "\n".make_literal_matcher("Expected newline");
+
+    // Function that handles state updates based on indentation
+    let parse_indentation = |input: StateCarrier<Indentation, &'a str>,
+                             is_indent: bool|
+     -> Result<
+        (StateCarrier<Indentation, &str>, usize),
+        (StateCarrier<Indentation, &str>, &str),
+    > {
+        // Function to count spaces followed by a newline
+        let count_spaces = |input: &'a str| -> Result<(&'a str, usize), (&'a str, &'a str)> {
+            let mut count = 0;
+            let mut rest = input;
+
+            // Count spaces
+            loop {
+                match space.parse(rest) {
+                    Ok((new_rest, _)) => {
+                        count += 1;
+                        rest = new_rest;
+                    }
+                    Err(_) => break,
+                }
+            }
+
+            // Expect a newline
+            match newline.parse(rest) {
+                Ok((final_rest, _)) => Ok((final_rest, count)),
+                Err((rest, err)) => Err((rest, err)),
+            }
+        };
+
+        match count_spaces(input.input) {
+            Ok((rest, count)) => {
+                let mut new_state = input.state.clone();
+
+                if is_indent {
+                    // For indent, push the level
+                    new_state.push_level(count);
+                } else {
+                    // For dedent, check if we need to pop
+                    if count < new_state.current_level() {
+                        new_state.pop_level();
+                    }
+                }
+
+                Ok((
+                    StateCarrier {
+                        state: new_state,
+                        input: rest,
+                    },
+                    count,
+                ))
+            }
+            Err((rest, err)) => Err((
+                StateCarrier {
+                    state: input.state,
+                    input: rest,
+                },
+                err,
+            )),
+        }
+    };
+
+    // Create indent and dedent parsers
+    let indent = |input| parse_indentation(input, true);
+    let dedent = |input| parse_indentation(input, false);
+
+    // Test with sample input
+    let input = "  \n    \n  \n".with_state(Indentation::new());
+
+    // Parse first indent
+    let result = indent(input);
+    match result {
+        Ok((rest, _)) => {
+            assert_eq!(rest.state.current_level(), 2);
+            assert_eq!(rest.state.depth(), 1);
+
+            // Parse second indent
+            let result2 = indent(rest);
+            match result2 {
+                Ok((rest2, _)) => {
+                    assert_eq!(rest2.state.current_level(), 4);
+                    assert_eq!(rest2.state.depth(), 2);
+
+                    // Parse dedent
+                    let result3 = dedent(rest2);
+                    match result3 {
+                        Ok((rest3, _)) => {
+                            assert_eq!(rest3.state.current_level(), 2);
+                            assert_eq!(rest3.state.depth(), 1);
+                        }
+                        Err(_) => panic!("Dedent parsing failed"),
+                    }
+                }
+                Err(_) => panic!("Second indent parsing failed"),
+            }
+        }
+        Err(_) => panic!("First indent parsing failed"),
+    }
 }
