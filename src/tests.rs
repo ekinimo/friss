@@ -371,11 +371,11 @@ fn test_and_then() {
 fn test_exactly_n() {
     let parser = "a"
         .make_literal_matcher("No a")
-        .exactly_n::<2>("Need exactly 2");
+        .exactly_n::<3>("Need exactly 3");
 
-    assert_eq!(parser.parse("aa"), Ok(("", Box::new(["a", "a"]))));
-    assert_eq!(parser.parse("a"), Err(("a", "Need exactly 2")));
-    assert_eq!(parser.parse("aaa"), Ok(("a", Box::new(["a", "a"]))));
+    assert_eq!(parser.parse("aaa"), Ok(("", Box::new(["a", "a", "a"]))));
+    assert_eq!(parser.parse("aa"), Err(("", "Need exactly 3")));
+    assert_eq!(parser.parse("aaaa"), Ok(("a", Box::new(["a", "a", "a"]))));
 }
 
 /// Test at least N parser
@@ -1113,7 +1113,7 @@ mod scratch {
 
         assert_eq!(dbg!(result), Ok(("x = 3 in x+1;","let")));
 
-        assert_eq!(false,true);
+      
     }
 
 }

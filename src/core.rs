@@ -28,7 +28,7 @@
 //! assert_eq!(combined.parse("123"), Ok(("3", "12".to_string())));
 //! ```
 use std::cell::RefCell;
-use crate::{state::{StateCarrier, StatefulParser, TransitionParser}, types::*};
+use crate::{state::{ParserWithStateTransition, StateCarrier,  StatefulParser}, types::*};
 
 /// Trait for items within a `Parsable` type.
 ///
@@ -136,14 +136,14 @@ pub trait Parser<Input: Parsable<Error>, Output: ParserOutput, Error: Clone> {
     fn with_state_transition<State,SuccessF,FailF>(self,succes:SuccessF,fail:FailF)-> impl StatefulParser<State,Input,Output,Error>
         where
         State:Default,
-        Input : Clone,
+    Input : Clone ,
         Self : Sized,
     for<'a> SuccessF: FnMut(State, Input, Output, Input) -> (State, Input, Output) + 'a,
     for<'a> FailF: FnMut(State, Input, Error, Input) -> (State, Input, Error) + 'a,
     StateCarrier<State, Input>: Parsable<Error>,
     {
 
-        TransitionParser::new_with_success_and_fail(self,succes,fail)
+        ParserWithStateTransition::new_with_success_and_fail(self,succes,fail)
      
     }
 
@@ -623,7 +623,7 @@ pub trait Parser<Input: Parsable<Error>, Output: ParserOutput, Error: Clone> {
     ///     .exactly_n::<2>("Need exactly 2 'a's");
     ///
     /// assert_eq!(parser.parse("aa"), Ok(("", Box::new(["a", "a"]))));
-    /// assert_eq!(parser.parse("a"), Err(("a", "Need exactly 2 'a's")));
+    /// assert_eq!(parser.parse("a"), Err(("", "Need exactly 2 'a's")));
     /// assert_eq!(parser.parse("aaa"), Ok(("a", Box::new(["a", "a"]))));
     /// ```
     fn exactly_n<const N: usize>(self, err: Error) -> impl ExactlyNParser<N, Input, Output, Error>
@@ -634,6 +634,7 @@ pub trait Parser<Input: Parsable<Error>, Output: ParserOutput, Error: Clone> {
         Output: Copy,
     {
         move |input: Input| {
+            let end_p = Input::make_empty_matcher(err.clone());
             let mut result = Vec::with_capacity(N);
             let mut rest = input;
             let mut remaining = N;
@@ -641,12 +642,19 @@ pub trait Parser<Input: Parsable<Error>, Output: ParserOutput, Error: Clone> {
             while remaining > 0 {
                 match self.parse(rest) {
                     Ok((new_rest, ret)) => {
-                        /*if new_rest == rest {
-                            break;
-                        }*/
-                        rest = new_rest;
-                        result.push(ret);
-                        remaining -= 1;
+                        let is_end = end_p.parse(new_rest);
+                        match is_end {
+                            Ok((new_new_rest,_)) => {
+                                rest = new_new_rest;
+                                result.push(ret);
+                                break;
+                            },
+                            Err((new_new_rest,_)) =>{
+                                rest = new_new_rest;
+                                result.push(ret);
+                                remaining -= 1;
+                            },
+                        }
                     }
                     Err((new_rest, err)) => { rest = new_rest; maybe_err = Some(err);  break;},
                 }
@@ -655,15 +663,16 @@ pub trait Parser<Input: Parsable<Error>, Output: ParserOutput, Error: Clone> {
             if let Some(err) = maybe_err{
                 return Err((rest, err.clone()))
             }
+
             if result.len() == N {
                 result.shrink_to_fit();
                 if let Some((r, _)) = result.split_first_chunk_mut::<N>() {
                     Ok((rest, Box::new(r.to_owned())))
                 } else {
-                    Err((rest, err.clone()))
+                    unreachable!("wtf")
                 }
             } else {
-                Err((rest, err.clone()))
+                return Err((rest, err.clone()))
             }
         }
     }

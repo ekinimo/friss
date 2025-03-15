@@ -4,7 +4,6 @@
 //! including Either types, natural number types, and type traits for sum and product types.
 
 use core::fmt::Debug;
-use std::marker::PhantomData;
 
 /// A sum type representing one of two possible values.
 #[derive(Copy, Clone, PartialEq, PartialOrd, Eq, Ord, Hash, Debug)]
