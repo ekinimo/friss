@@ -28,10 +28,10 @@
 //! assert_eq!(combined.parse("123"), Ok(("3", "12".to_string())));
 //! ```
 use crate::{
-    state::{ ParserWithStateTransition, StateCarrier, StatefulParser},
+    state::{ParserWithStateTransition, StateCarrier, StatefulParser},
     types::*,
 };
-use std::cell::RefCell;
+use std::{borrow::Borrow, cell::{Cell, RefCell}, marker::PhantomData, rc::Rc};
 
 /// Trait for items within a `Parsable` type.
 ///
@@ -75,7 +75,7 @@ pub trait ParsableItem<Parent: Parsable<Error>, Error: Clone>: Sized {
 /// assert_eq!(any_char.parse("abc"), Ok(("bc", 'a')));
 /// assert_eq!(any_char.parse(""), Err(("", "Expected any character")));
 /// ```
-pub trait Parsable<Error: Clone>: Sized {
+pub trait Parsable<Error: Clone>: Sized + Clone {
     /// The type of individual items within this parsable type.
     type Item;
 
@@ -134,6 +134,7 @@ pub trait Parser<Input: Parsable<Error>, Output: ParserOutput, Error: Clone> {
     /// ```
     fn parse(&self, input: Input) -> Result<(Input, Output), (Input, Error)>;
 
+    
     /// Creates a stateful parser by adding state transition handling.
     ///
     /// This method transforms a regular parser into a stateful parser that can
@@ -379,7 +380,7 @@ pub trait Parser<Input: Parsable<Error>, Output: ParserOutput, Error: Clone> {
     /// assert_eq!(parser.parse("invalid"), Err(("", "Success not expected")));
     /// assert_eq!(parser.parse("fallback"), Ok(("", "fallback")));
     /// ```
-    fn bind_err<Out2, Err2, BindFun,  Ret: Parser<Input, Out2, Err2>>(
+    fn bind_err<Out2, Err2, BindFun, Ret: Parser<Input, Out2, Err2>>(
         self,
         f: BindFun,
         err: Err2,
@@ -943,7 +944,6 @@ pub trait Parser<Input: Parsable<Error>, Output: ParserOutput, Error: Clone> {
         }
     }
 
-
     /// Lifts a parser to `StatefulParser`
     /*fn state_lift<State>(&self)-> StatefulParser<State,Input,Output,Error>{
         move |carrier: StateCarrier<State, Input>| {
@@ -1234,7 +1234,6 @@ pub trait Parser<Input: Parsable<Error>, Output: ParserOutput, Error: Clone> {
             let first = self.parse(input.clone());
             let second = other.parse(input.clone());
 
-            
             match (first, second) {
                 (Ok(a), Ok(b)) => Ok((input, (Some(a), Some(b)))),
                 (Ok(a), Err(_)) => Ok((input, (Some(a), None))),
@@ -1381,7 +1380,8 @@ where
     Input: Parsable<Error> + Clone + 'static,
     Output: 'static,
     Error: Clone + 'static,
-    F: Fn(Box<dyn Parser<Input, Output, Error>>) -> Box<dyn Parser<Input, Output, Error>> + 'static,
+    F: FnOnce(Box<dyn Parser<Input, Output, Error>>) -> Box<dyn Parser<Input, Output, Error>>
+        + 'static,
 {
     let cell: std::rc::Rc<RefCell<Option<Box<dyn Parser<Input, Output, Error>>>>> =
         std::rc::Rc::new(RefCell::new(None));
@@ -1494,8 +1494,45 @@ pub trait ExactlyNParser<const N: usize, Input: Parsable<Error>, Output, Error: 
 {
 }
 
+
+#[derive(Clone)]
+pub struct FnOnceWrapper<Input,Output,Error,F>{
+    fun:RefCell<F>,
+    phantom:PhantomData<(Input,Output,Error)>
+}
+
+impl<Input,Output,Error,F> FnOnceWrapper<Input,Output,Error,F>
+    where
+    F:    FnOnce(Input) -> Result<(Input, Output), (Input, Error)>,
+    Input: Parsable<Error>,
+    Error: Clone,
+{
+    pub fn new(fun:F)->Self{
+        FnOnceWrapper { fun : fun.into() , phantom: PhantomData }
+    }
+
+    pub fn run(&self,input:Input)->Result<(Input, Output), (Input, Error)> where Self:Clone{
+        let new_self = self.clone();
+        let fun = self.fun.replace(new_self.fun.into_inner());
+        (fun)(input)
+    }
+}
+
+impl<Input, Output, Error, Function:Sized> Parser<Input, Output, Error> for FnOnceWrapper<Input, Output, Error,Function>
+    where
+    Function: FnOnce(Input) -> Result<(Input, Output), (Input, Error)> + Clone,
+    Input: Parsable<Error>,
+    Error: Clone,
+   Output:Clone,
+{
+    fn parse(&self, input: Input) -> Result<(Input, Output), (Input, Error)> {
+        self.run(input)
+    }
+}
+
+
 // Implement the `Parser` trait for functions that match the parser signature
-impl<Input, Output, Error, Function> Parser<Input, Output, Error> for Function
+impl<Input, Output, Error, Function:?Sized> Parser<Input, Output, Error> for Function
 where
     Function: Fn(Input) -> Result<(Input, Output), (Input, Error)>,
     Input: Parsable<Error>,
@@ -1505,6 +1542,8 @@ where
         self(input)
     }
 }
+
+
 
 // Implement specialized parser traits for functions
 impl<Input, Output1, Output2, Error1, Error2, Function>
@@ -1516,6 +1555,9 @@ where
     Error2: Clone,
 {
 }
+
+
+
 
 impl<Input, Output1, Output2, Error1, Error2, Function>
     AltParser<Input, Output1, Output2, Error1, Error2> for Function
@@ -1578,3 +1620,4 @@ where
         Parent::make_item_matcher(self, err)
     }
 }
+

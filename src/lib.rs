@@ -175,11 +175,12 @@ pub mod state;
 
 //TODO reconsider
 pub mod lexer /*integrate with stateful parsers and builtin states*/;
+pub mod memo; /*needs a sanity check, not sure if i like the api*/
+pub mod packrat; //"this one needs a serious check!!"
 
 //TODO implement
-pub mod memo; /*memoize parsers based on input and  packrat parsers using state*/
-pub mod context; /*contextual parsers*/
 pub mod pratt; /* Pratt parser with pre/in/pos/mix-fix precedence*/
+pub mod context; /*contextual parsers*/
 pub mod grammar; /* Grammar builder: api
 
 let mut builder = GrammarBuilder::new();
